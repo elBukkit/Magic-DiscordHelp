@@ -1,0 +1,8 @@
+name: Magic-DiscordHelp
+main: com.elmakers.mine.bukkit.plugins.help.MagicDiscordHelpPlugin
+version: 1.0
+api-version: 1.17
+author: NathanWolf
+description: A plugin to expose /mhelp to Discord
+depend:
+  - Magic
