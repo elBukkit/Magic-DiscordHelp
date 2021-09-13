@@ -15,12 +15,13 @@ public class DiscordChatListener extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
-        //Event specific information
         User author = event.getAuthor();
+        if (author.isBot()) return;
         Message message = event.getMessage();
         MessageChannel channel = event.getChannel();
+        if (!channel.getName().equals(controller.getChannel())) return;
+
         String msg = message.getContentDisplay();
-        boolean bot = author.isBot();
         controller.getLogger().info("Got message: " + msg);
     }
 }

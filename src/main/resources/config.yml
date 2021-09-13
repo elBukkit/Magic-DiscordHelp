@@ -1,2 +1,5 @@
 # Put your bot token here
 token:
+
+# The bot will only work with one channel
+channel: mhelp

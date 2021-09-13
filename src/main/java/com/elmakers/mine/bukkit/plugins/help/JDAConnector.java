@@ -23,7 +23,6 @@ public class JDAConnector implements Runnable {
             String token = controller.getToken();
             JDA jda = JDABuilder.create(intents)
                     .setAutoReconnect(true)
-                    .setBulkDeleteSplittingEnabled(false)
                     .setToken(token)
                     .addEventListeners(new DiscordChatListener(controller))
                     .build();
