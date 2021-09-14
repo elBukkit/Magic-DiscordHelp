@@ -1,8 +1,11 @@
 package com.elmakers.mine.bukkit.plugins.help;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,6 +17,7 @@ import com.elmakers.mine.bukkit.ChatUtils;
 import com.elmakers.mine.bukkit.utility.help.Help;
 import com.elmakers.mine.bukkit.utility.help.HelpTopic;
 import com.elmakers.mine.bukkit.utility.help.HelpTopicMatch;
+import com.google.common.collect.ImmutableSet;
 
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -24,6 +28,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.Button;
+import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyAction;
 
@@ -31,6 +36,8 @@ public class DiscordChatListener extends ListenerAdapter {
     private static final Pattern MHELP_PATTERN = Pattern.compile("/mhelp ([a-z_A-Z\\.]*)");
     private final MagicDiscordHelpPlugin controller;
     private final Help help;
+    private final Set<Long> sentLanguage = new HashSet<>();
+    private final Set<String> languageKeywords = ImmutableSet.of("language", "translat", "localiz");
 
     public DiscordChatListener(MagicDiscordHelpPlugin controller) {
         this.controller = controller;
@@ -100,7 +107,12 @@ public class DiscordChatListener extends ListenerAdapter {
 
     @Override
     public void onButtonClick(ButtonClickEvent event) {
-        if (event.getChannel().getName().equals(controller.getIgnoreChannel())) return;
+        MessageChannel channel = event.getChannel();
+        if (channel.getName().equals(controller.getIgnoreChannel())) return;
+        String reactionChanel = controller.getReactionChannel();
+        String targetChannel = controller.getChannel();
+        if (!reactionChanel.equals("*") && !channel.getName().equals(reactionChanel) && !channel.getName().equals(targetChannel)) return;
+
         Button button = event.getButton();
         if (button == null) return;
         String id = button.getId();
@@ -129,7 +141,7 @@ public class DiscordChatListener extends ListenerAdapter {
     @Override
     public void onMessageReactionAdd(MessageReactionAddEvent event) {
         User user = event.getUser();
-        if (user.isBot()) return;
+        if (user != null && user.isBot()) return;
         MessageChannel channel = event.getChannel();
         if (channel.getName().equals(controller.getIgnoreChannel())) return;
         String reactionChanel = controller.getReactionChannel();
@@ -151,8 +163,34 @@ public class DiscordChatListener extends ListenerAdapter {
         respondToMessage(message);
     }
 
+    protected void sendTranslateMessage(Message message) {
+        String translateMessage = "🇺🇸 You can add a flag reaction to any message on this server to have it translated for you";
+        translateMessage += "\n🇪🇸 Puede agregar una reacción de bandera a cualquier mensaje en este servidor para que se lo traduzca";
+        translateMessage += "\n🇫🇷 Vous pouvez ajouter une réaction de drapeau à n'importe quel message sur ce serveur pour le faire traduire pour vous";
+        translateMessage += "\n🇩🇪 Sie können jeder Nachricht auf diesem Server eine Flaggenreaktion hinzufügen, um sie für Sie übersetzen zu lassen";
+        translateMessage += "\n🇮🇹 Puoi aggiungere una reazione di segnalazione a qualsiasi messaggio su questo server per averlo tradotto per te";
+        translateMessage += "\n🇵🇹 Você pode adicionar um sinalizador de reação a qualquer mensagem neste servidor para traduzi-la para você";
+        translateMessage += "\n🇯🇵 このサーバー上の任意のメッセージにフラグリアクションを追加して、メッセージを翻訳してもらうことができます";
+        translateMessage += "\n🇨🇳 您可以向此服务器上的任何消息添加标记反应，以便为您翻译";
+        translateMessage += "\n🇰🇷 이 서버의 모든 메시지에 플래그 반응을 추가하여 번역할 수 있습니다.";
+
+        MessageAction response = message.reply(translateMessage);
+        response.queue(sentMessage -> sentMessage.addReaction("🇺🇸").queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send language message response", throwable));
+    }
+
     protected void respondToMessage(Message message) {
         String msg = message.getContentDisplay();
+        User author = message.getAuthor();
+        if (!sentLanguage.contains(author.getIdLong())) {
+            String lowerMessage = msg.toLowerCase();
+            for (String keyword : languageKeywords) {
+                if (lowerMessage.contains(keyword)) {
+                    sentLanguage.add(author.getIdLong());
+                    sendTranslateMessage(message);
+                    break;
+                }
+            }
+        }
         String[] pieces = ChatUtils.getWords(msg);
         if (pieces.length == 0) return;
 
