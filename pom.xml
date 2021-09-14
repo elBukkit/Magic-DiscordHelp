@@ -7,7 +7,7 @@
     <name>Magic Discord help</name>
 
     <properties>
-        <magic.version>10.0-SNAPSHOT</magic.version>
+        <magic.version>10.1-SNAPSHOT</magic.version>
         <bukkit.version>1.17-R0.1-SNAPSHOT</bukkit.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
