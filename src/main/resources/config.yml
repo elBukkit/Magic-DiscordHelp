@@ -3,3 +3,7 @@ token:
 
 # The bot will only work with one channel
 channel: mhelp
+
+# For allowing message processing in other channels with a reaction
+reaction_channel: "*"
+reaction_emote: miha

@@ -7,6 +7,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.ChatColor;
 
 import com.elmakers.mine.bukkit.ChatUtils;
@@ -14,12 +15,12 @@ import com.elmakers.mine.bukkit.utility.help.Help;
 import com.elmakers.mine.bukkit.utility.help.HelpTopic;
 import com.elmakers.mine.bukkit.utility.help.HelpTopicMatch;
 
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.Button;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
@@ -96,6 +97,9 @@ public class DiscordChatListener extends ListenerAdapter {
     protected String translateMessage(String message) {
         // Oh yeah hacks sue me
         message = message.replace("➽", "");
+        if (message.length() >= 2000) {
+            message = message.substring(0, 1996) + "...";
+        }
         return ChatColor.stripColor(message);
     }
 
@@ -123,13 +127,29 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     @Override
+    public void onMessageReactionAdd(MessageReactionAddEvent event) {
+        User user = event.getUser();
+        if (user.isBot()) return;
+        MessageChannel channel = event.getChannel();
+        String reactionChanel = controller.getReactionChannel();
+        if (!reactionChanel.equals("*") && !channel.getName().equals(reactionChanel)) return;
+        String reactionCode = event.getReaction().getReactionEmote().getAsReactionCode();
+        reactionCode = StringUtils.split(reactionCode, ":")[0];
+        if (!reactionCode.equals(controller.getReactionEmote())) return;
+        event.retrieveMessage().queue(this::respondToMessage);
+    }
+
+    @Override
     public void onMessageReceived(MessageReceivedEvent event) {
         User author = event.getAuthor();
         if (author.isBot()) return;
-        Message message = event.getMessage();
         MessageChannel channel = event.getChannel();
         if (!channel.getName().equals(controller.getChannel())) return;
+        Message message = event.getMessage();
+        respondToMessage(message);
+    }
 
+    protected void respondToMessage(Message message) {
         String msg = message.getContentDisplay();
         String[] pieces = ChatUtils.getWords(msg);
         if (pieces.length == 0) return;
@@ -146,11 +166,19 @@ public class DiscordChatListener extends ListenerAdapter {
             keywords.add(arg.toLowerCase());
         }
         List<HelpTopicMatch> matches = help.findMatches(keywords);
+        if (matches.isEmpty()) {
+            respond(message, "404: Sorry I have no idea what you're talking about!");
+            return;
+        }
+        if (matches.size() == 1) {
+            respond(message, matches.get(0).getTopic());
+            return;
+        }
         Collections.sort(matches);
         StringBuilder sb = new StringBuilder();
         sb.append("Found ");
         sb.append(matches.size());
-        sb.append(matches.size() == 1 ? " match" : " matches");
+        sb.append(" matches");
         if (matches.size() > 5) {
             sb.append(" (showing top 5)");
         }
@@ -160,7 +188,7 @@ public class DiscordChatListener extends ListenerAdapter {
         for (HelpTopicMatch match : matches) {
             if (count++ >= 5) break;
             String title = match.getTopic().getTitle();
-            String summary = match.getSummary(keywords, title, 50);
+            String summary = match.getSummary(keywords, title, 100);
             buttonLabels.add(title);
             buttonIds.add(match.getTopic().getKey());
             sb.append("\n");
@@ -170,6 +198,6 @@ public class DiscordChatListener extends ListenerAdapter {
         }
 
         // TODO: Hard limit to 1000?
-        sendTopic(channel, sb.toString(), buttonIds, buttonLabels);
+        sendTopic(message.getChannel(), sb.toString(), buttonIds, buttonLabels);
     }
 }
