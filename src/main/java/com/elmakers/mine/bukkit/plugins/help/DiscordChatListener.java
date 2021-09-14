@@ -36,21 +36,15 @@ public class DiscordChatListener extends ListenerAdapter {
         help = controller.getMagic().getMessages().getHelp();
     }
 
-    protected void send(MessageChannel channel, String message) {
+    protected void respond(Message originalMessage, String message, List<String> buttonIds, List<String> buttonLabels) {
         message = translateMessage(message);
-        MessageAction action = channel.sendMessage(message);
-        action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message to channel " + channel.getName(), throwable));
-    }
-
-    protected void sendTopic(MessageChannel channel, String message, List<String> buttonIds, List<String> buttonLabels) {
-        message = translateMessage(message);
-        MessageAction action = channel.sendMessage(message);
+        MessageAction action = originalMessage.reply(message);
         Button[] buttons = new Button[buttonIds.size()];
         for (int i = 0; i < buttons.length; i++) {
             buttons[i] = Button.primary("help:" + buttonIds.get(i), buttonLabels.get(i));
         }
         action.setActionRow(buttons);
-        action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message to channel " + channel.getName(), throwable));
+        action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in channel " + originalMessage.getChannel(), throwable));
     }
 
     protected void addTopics(MessageAction action, String message) {
@@ -188,7 +182,7 @@ public class DiscordChatListener extends ListenerAdapter {
         for (HelpTopicMatch match : matches) {
             if (count++ >= 5) break;
             String title = match.getTopic().getTitle();
-            String summary = match.getSummary(keywords, title, 100);
+            String summary = match.getSummary(keywords, title, 100, "**", "**");
             buttonLabels.add(title);
             buttonIds.add(match.getTopic().getKey());
             sb.append("\n");
@@ -197,7 +191,6 @@ public class DiscordChatListener extends ListenerAdapter {
             sb.append(summary);
         }
 
-        // TODO: Hard limit to 1000?
-        sendTopic(message.getChannel(), sb.toString(), buttonIds, buttonLabels);
+        respond(message, sb.toString(), buttonIds, buttonLabels);
     }
 }
