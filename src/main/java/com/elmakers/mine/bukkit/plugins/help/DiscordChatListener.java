@@ -15,6 +15,7 @@ import com.elmakers.mine.bukkit.utility.help.Help;
 import com.elmakers.mine.bukkit.utility.help.HelpTopic;
 import com.elmakers.mine.bukkit.utility.help.HelpTopicMatch;
 
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
@@ -110,6 +111,10 @@ public class DiscordChatListener extends ListenerAdapter {
         if (topic != null) {
             String message = getTopicMessage(topic);
             message = translateMessage(message);
+            Member clicker = event.getMember();
+            if (clicker != null) {
+                message += "\n    *for: " + event.getMember().getAsMention() + "*";
+            }
             ReplyAction action = event.reply(message);
             List<Button> buttons = getTopicButtons(message);
             if (!buttons.isEmpty()) {
