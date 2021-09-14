@@ -34,6 +34,9 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
     }
 
     public void onDisable() {
+        if (jda != null) {
+            jda.shutdownNow();
+        }
     }
 
     public String getToken() {

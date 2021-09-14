@@ -4,8 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.ChatColor;
 
 import com.elmakers.mine.bukkit.ChatUtils;
@@ -22,8 +23,10 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.Button;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
+import net.dv8tion.jda.api.requests.restaction.interactions.ReplyAction;
 
 public class DiscordChatListener extends ListenerAdapter {
+    private static final Pattern MHELP_PATTERN = Pattern.compile("/mhelp ([a-z_A-Z\\.]*)");
     private final MagicDiscordHelpPlugin controller;
     private final Help help;
 
@@ -43,15 +46,36 @@ public class DiscordChatListener extends ListenerAdapter {
         MessageAction action = channel.sendMessage(message);
         Button[] buttons = new Button[buttonIds.size()];
         for (int i = 0; i < buttons.length; i++) {
-            buttons[i] = Button.primary("navigate:" + buttonIds.get(i), buttonLabels.get(i));
+            buttons[i] = Button.primary("help:" + buttonIds.get(i), buttonLabels.get(i));
         }
         action.setActionRow(buttons);
         action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message to channel " + channel.getName(), throwable));
     }
 
+    protected void addTopics(MessageAction action, String message) {
+        List<Button> buttons = getTopicButtons(message);
+        if (!buttons.isEmpty()) {
+            action.setActionRow(buttons);
+        }
+    }
+
+    protected List<Button> getTopicButtons(String message) {
+        List<Button> buttons = new ArrayList<>();
+        Matcher m = MHELP_PATTERN.matcher(message);
+        while (m.find()) {
+            String topicKey = m.group(1);
+            HelpTopic topic = help.getTopic(topicKey);
+            if (topic == null) continue;
+            Button button = Button.primary("help:" + topicKey, topic.getTitle());
+            buttons.add(button);
+        }
+        return buttons;
+    }
+
     protected void respond(Message authorMessage, String message) {
         message = translateMessage(message);
         MessageAction action = authorMessage.reply(message);
+        addTopics(action, message);
         action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message to channel " + authorMessage.getChannel().getName(), throwable));
     }
 
@@ -90,13 +114,18 @@ public class DiscordChatListener extends ListenerAdapter {
         if (button == null) return;
         String id = button.getId();
         if (id == null) return;
-        if (!id.startsWith("navigate:")) return;
-        final String topicId = id.substring(9);
+        if (!id.startsWith("help:")) return;
+        final String topicId = id.substring(5);
         HelpTopic topic = help.getTopic(topicId);
         if (topic != null) {
             String message = getTopicMessage(topic);
             message = translateMessage(message);
-            event.reply(message).queue();
+            ReplyAction action = event.reply(message);
+            List<Button> buttons = getTopicButtons(message);
+            if (!buttons.isEmpty()) {
+                action.addActionRow(buttons);
+            }
+            action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
         } else {
             event.reply("Could not find help topic: " + id).queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click: " + topicId, throwable));
         }
@@ -128,9 +157,9 @@ public class DiscordChatListener extends ListenerAdapter {
         List<HelpTopicMatch> matches = help.findMatches(keywords);
         Collections.sort(matches);
         StringBuilder sb = new StringBuilder();
-        sb.append("Found");
+        sb.append("Found ");
         sb.append(matches.size());
-        sb.append(" matches");
+        sb.append(matches.size() == 1 ? " match" : " matches");
         if (matches.size() > 5) {
             sb.append(" (showing top 5)");
         }
@@ -140,7 +169,7 @@ public class DiscordChatListener extends ListenerAdapter {
         for (HelpTopicMatch match : matches) {
             if (count++ >= 5) break;
             String title = match.getTopic().getTitle();
-            String summary = match.getSummary(keywords, title, 100);
+            String summary = match.getSummary(keywords, title, 50);
             buttonLabels.add(title);
             buttonIds.add(match.getTopic().getKey());
             sb.append("\n");
@@ -149,6 +178,7 @@ public class DiscordChatListener extends ListenerAdapter {
             sb.append(summary);
         }
 
+        // TODO: Hard limit to 1000?
         sendTopic(channel, sb.toString(), buttonIds, buttonLabels);
     }
 }
