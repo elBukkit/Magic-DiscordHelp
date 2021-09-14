@@ -111,10 +111,9 @@ public class DiscordChatListener extends ListenerAdapter {
         if (!channel.getName().equals(controller.getChannel())) return;
 
         String msg = message.getContentDisplay();
-        controller.getLogger().info("Got message: " + msg);
+        String[] pieces = ChatUtils.getWords(msg);
+        if (pieces.length == 0) return;
 
-
-        String[] pieces = StringUtils.split(msg, " ");
         if (pieces.length == 1) {
             HelpTopic topic = help.getTopic(pieces[0]);
             if (topic != null) {
