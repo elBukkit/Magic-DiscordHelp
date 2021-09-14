@@ -51,7 +51,7 @@ public class DiscordChatListener extends ListenerAdapter {
             buttons[i] = Button.primary("help:" + buttonIds.get(i), buttonLabels.get(i));
         }
         action.setActionRow(buttons);
-        action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in channel " + originalMessage.getChannel(), throwable));
+        action.queue(sentMessage -> sentMessage.suppressEmbeds(true).queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in channel " + originalMessage.getChannel(), throwable));
     }
 
     protected void addTopics(MessageAction action, String message) {
@@ -79,7 +79,7 @@ public class DiscordChatListener extends ListenerAdapter {
         message = translateMessage(message);
         MessageAction action = authorMessage.reply(message);
         addTopics(action, message);
-        action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message to channel " + authorMessage.getChannel().getName(), throwable));
+        action.queue(sentMessage -> sentMessage.suppressEmbeds(true).queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message to channel " + authorMessage.getChannel().getName(), throwable));
     }
 
     protected void respond(Message authorMessage, HelpTopic topic) {
