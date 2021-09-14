@@ -131,11 +131,8 @@ public class DiscordChatListener extends ListenerAdapter {
         if (topic != null) {
             String message = getTopicMessage(topic);
             message = translateMessage(message);
-            Member clicker = event.getMember();
-            if (clicker != null) {
-                message += "\n    *for: " + event.getMember().getAsMention() + "*";
-            }
             ReplyAction action = event.reply(message);
+            action.setEphemeral(true);
             List<Button> buttons = getTopicButtons(message);
             if (!buttons.isEmpty()) {
                 action.addActionRow(buttons);
