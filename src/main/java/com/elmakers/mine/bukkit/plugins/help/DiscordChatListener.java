@@ -99,6 +99,7 @@ public class DiscordChatListener extends ListenerAdapter {
 
     @Override
     public void onButtonClick(ButtonClickEvent event) {
+        if (event.getChannel().getName().equals(controller.getIgnoreChannel())) return;
         Button button = event.getButton();
         if (button == null) return;
         String id = button.getId();
@@ -125,6 +126,7 @@ public class DiscordChatListener extends ListenerAdapter {
         User user = event.getUser();
         if (user.isBot()) return;
         MessageChannel channel = event.getChannel();
+        if (channel.getName().equals(controller.getIgnoreChannel())) return;
         String reactionChanel = controller.getReactionChannel();
         if (!reactionChanel.equals("*") && !channel.getName().equals(reactionChanel)) return;
         String reactionCode = event.getReaction().getReactionEmote().getAsReactionCode();
@@ -138,6 +140,7 @@ public class DiscordChatListener extends ListenerAdapter {
         User author = event.getAuthor();
         if (author.isBot()) return;
         MessageChannel channel = event.getChannel();
+        if (channel.getName().equals(controller.getIgnoreChannel())) return;
         if (!channel.getName().equals(controller.getChannel())) return;
         Message message = event.getMessage();
         respondToMessage(message);

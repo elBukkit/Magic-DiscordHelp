@@ -4,6 +4,9 @@ token:
 # The bot will only work with one channel
 channel: mhelp
 
+# The bot will completely ignore these channels, even for reactions
+ignore_channel:
+
 # For allowing message processing in other channels with a reaction
 reaction_channel: "*"
 reaction_emote: miha
