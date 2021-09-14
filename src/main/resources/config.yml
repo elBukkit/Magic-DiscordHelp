@@ -9,4 +9,4 @@ ignore_channel:
 
 # For allowing message processing in other channels with a reaction
 reaction_channel: "*"
-reaction_emote: miha
+reaction_emote: miha:887420186632802345

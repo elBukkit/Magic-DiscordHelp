@@ -1,7 +1,6 @@
 package com.elmakers.mine.bukkit.plugins.help;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -10,7 +9,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.ChatColor;
 
 import com.elmakers.mine.bukkit.ChatUtils;
@@ -22,13 +20,13 @@ import com.google.common.collect.ImmutableSet;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.MessageReaction;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.Button;
-import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyAction;
 
@@ -45,6 +43,7 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     protected void respond(Message originalMessage, String message, List<String> buttonIds, List<String> buttonLabels) {
+        responded(originalMessage);
         message = translateMessage(message);
         MessageAction action = originalMessage.reply(message);
         Button[] buttons = new Button[buttonIds.size()];
@@ -76,6 +75,7 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     protected void respond(Message authorMessage, String message) {
+        responded(authorMessage);
         message = translateMessage(message);
         MessageAction action = authorMessage.reply(message);
         addTopics(action, message);
@@ -84,6 +84,13 @@ public class DiscordChatListener extends ListenerAdapter {
 
     protected void respond(Message authorMessage, HelpTopic topic) {
         respond(authorMessage, getTopicMessage(topic));
+    }
+
+    protected void responded(Message authorMessage) {
+        String responseReaction = controller.getReactionEmote();
+        if (!responseReaction.isEmpty()) {
+            authorMessage.addReaction(responseReaction).queue();
+        }
     }
 
     protected String getTopicMessage(HelpTopic topic) {
@@ -120,6 +127,7 @@ public class DiscordChatListener extends ListenerAdapter {
         if (!id.startsWith("help:")) return;
         final String topicId = id.substring(5);
         HelpTopic topic = help.getTopic(topicId);
+        responded(event.getMessage());
         if (topic != null) {
             String message = getTopicMessage(topic);
             message = translateMessage(message);
@@ -147,9 +155,19 @@ public class DiscordChatListener extends ListenerAdapter {
         String reactionChanel = controller.getReactionChannel();
         if (!reactionChanel.equals("*") && !channel.getName().equals(reactionChanel)) return;
         String reactionCode = event.getReaction().getReactionEmote().getAsReactionCode();
-        reactionCode = StringUtils.split(reactionCode, ":")[0];
         if (!reactionCode.equals(controller.getReactionEmote())) return;
-        event.retrieveMessage().queue(this::respondToMessage);
+        event.retrieveMessage().queue(this::checkReactionAdd);
+    }
+
+    protected void checkReactionAdd(Message message) {
+        String emote = controller.getReactionEmote();
+        List<MessageReaction> reactions = message.getReactions();
+        for (MessageReaction reaction : reactions) {
+            if (reaction.getReactionEmote().getAsReactionCode().equals(emote) && reaction.getCount() > 1) {
+                return;
+            }
+        }
+        respondToMessage(message);
     }
 
     @Override
