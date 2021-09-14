@@ -83,23 +83,14 @@ public class DiscordChatListener extends ListenerAdapter {
         respond(authorMessage, getTopicMessage(topic));
     }
 
-    protected void respond(MessageChannel channel, Member member, String message) {
-        message = translateMessage(message);
-        MessageAction action = channel.sendMessage(message);
-        action.mention(member);
-        action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message to channel " + channel.getName(), throwable));
-    }
-
-    protected void respond(MessageChannel channel, Member member, HelpTopic topic) {
-        String topicText = topic.getText();
-        topicText = ChatUtils.getSimpleMessage(topicText);
-        respond(channel, member, topicText);
-    }
-
     protected String getTopicMessage(HelpTopic topic) {
         String topicText = topic.getText();
-        topicText = ChatUtils.getSimpleMessage(topicText);
+        topicText = getSimpleMessage(topicText);
         return topicText;
+    }
+
+    protected String getSimpleMessage(String message) {
+        return ChatUtils.getSimpleMessage(message, false, " **", "**");
     }
 
     protected String translateMessage(String message) {
