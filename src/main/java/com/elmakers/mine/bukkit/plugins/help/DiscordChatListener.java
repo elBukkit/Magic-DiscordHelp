@@ -243,7 +243,7 @@ public class DiscordChatListener extends ListenerAdapter {
         for (HelpTopicMatch match : matches) {
             if (count++ >= 5) break;
             String title = match.getTopic().getTitle();
-            String summary = match.getSummary(keywords, title, 100, "**", "**");
+            String summary = match.getSummary(help, keywords, title, 100, "**", "**");
             buttonLabels.add(title);
             buttonIds.add(match.getTopic().getKey());
             sb.append("\n");
