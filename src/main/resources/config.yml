@@ -13,3 +13,6 @@ reaction_emote: miha:887420186632802345
 
 # This role will be added to players on join, and each response will contain a button to let them clear it
 join_role:
+
+# This is used for registering guild commands
+guild:

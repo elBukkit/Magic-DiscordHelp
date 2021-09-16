@@ -26,12 +26,17 @@ import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
+import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.Button;
 import net.dv8tion.jda.api.interactions.components.Component;
+import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyAction;
 
@@ -77,6 +82,13 @@ public class DiscordChatListener extends ListenerAdapter {
         List<Button> buttons = getTopicButtons(member, message);
         if (!buttons.isEmpty()) {
             action.setActionRow(buttons);
+        }
+    }
+
+    protected void addTopics(Member member, ReplyAction action, String message) {
+        List<Button> buttons = getTopicButtons(member, message);
+        if (!buttons.isEmpty()) {
+            action.addActionRow(buttons);
         }
     }
 
@@ -161,10 +173,7 @@ public class DiscordChatListener extends ListenerAdapter {
                 message = translateMessage(message);
                 ReplyAction action = event.reply(message);
                 action.setEphemeral(true);
-                List<Button> buttons = getTopicButtons(event.getMember(), message);
-                if (!buttons.isEmpty()) {
-                    action.addActionRow(buttons);
-                }
+                addTopics(event.getMember(), action, message);
                 action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
             } else {
                 event.reply("Could not find help topic: " + id).queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click: " + topicId, throwable));
@@ -285,7 +294,7 @@ public class DiscordChatListener extends ListenerAdapter {
             String welcomeMessage =
                     "<:missile:763893315887693855>        Welcome to the Magic Discord Server " + member.getAsMention() + "!         <:missile:763893315887693855>\n" +
                     "\n" +
-                    "Please try asking me a question first! If it doesn't work out, I will direct you to a human for support.\n" +
+                    "Please try asking me a question, I may be able to help!\n" +
                     "\n" +
                     "You may also browse the server FAQ <#827772240451207198> and <#808149802579132458> channels.\n" +
                     "\n" +
@@ -324,6 +333,37 @@ public class DiscordChatListener extends ListenerAdapter {
         Message message = event.getMessage();
         if (message.getMessageReference() != null) return;
         respondToMessage(message);
+    }
+
+    @Override
+    public void onSlashCommand(SlashCommandEvent event) {
+        switch (event.getName()) {
+            case "mhelp":
+                String topicKey = event.getOption("topic").getAsString();
+                HelpTopic topic = help.getTopic(topicKey);
+                if (topic != null) {
+                    String message = getTopicMessage(topic);
+                    message = translateMessage(message);
+                    ReplyAction action = event.reply(message);
+                    action.setEphemeral(true);
+                    addTopics(event.getMember(), action, message);
+                    action.setEphemeral(true).queue();
+                } else {
+                    event.reply("I'm sorry, that's not a valid topic!\nPlease use <#887124571147370547> to ask general questions.").setEphemeral(true).queue();
+                }
+                break;
+            default:
+                event.reply("I don't know what that command means or why I'm getting it, sorry!").setEphemeral(true).queue();
+        }
+    }
+
+    public void registerCommands(Guild guild) {
+        CommandListUpdateAction commands = guild.updateCommands();
+        commands.addCommands(
+                new CommandData("mhelp", "Show a specific help topic")
+                        .addOptions(new OptionData(OptionType.STRING, "topic", "The topic to show").setRequired(true))
+        );
+        commands.queue(success -> controller.getLogger().info("Registered /mhelp command"), throwable -> controller.getLogger().log(Level.WARNING, "Could not register slash commands", throwable));
     }
 
     protected void sendTranslateMessage(Message message) {
