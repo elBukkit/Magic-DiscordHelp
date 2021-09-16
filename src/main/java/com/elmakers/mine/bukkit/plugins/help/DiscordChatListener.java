@@ -230,13 +230,12 @@ public class DiscordChatListener extends ListenerAdapter {
             respond(message, matches.get(0).getTopic());
             return;
         }
-        Collections.sort(matches);
         StringBuilder sb = new StringBuilder();
-        sb.append("Found ");
+        sb.append("I Found ");
         sb.append(matches.size());
         sb.append(" matches");
         if (matches.size() > 5) {
-            sb.append(" (showing top 5)");
+            sb.append(" (but only showing top 5)");
         }
         List<String> buttonLabels = new ArrayList<>();
         List<String> buttonIds = new ArrayList<>();
