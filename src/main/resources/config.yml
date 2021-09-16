@@ -16,3 +16,4 @@ join_role:
 
 # This is used for registering guild commands
 guild:
+command: mhelp

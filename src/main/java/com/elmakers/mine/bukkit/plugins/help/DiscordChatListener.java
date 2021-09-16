@@ -337,33 +337,37 @@ public class DiscordChatListener extends ListenerAdapter {
 
     @Override
     public void onSlashCommand(SlashCommandEvent event) {
-        switch (event.getName()) {
-            case "mhelp":
-                String topicKey = event.getOption("topic").getAsString();
-                HelpTopic topic = help.getTopic(topicKey);
-                if (topic != null) {
-                    String message = getTopicMessage(topic);
-                    message = translateMessage(message);
-                    ReplyAction action = event.reply(message);
-                    action.setEphemeral(true);
-                    addTopics(event.getMember(), action, message);
-                    action.setEphemeral(true).queue();
-                } else {
-                    event.reply("I'm sorry, that's not a valid topic!\nPlease use <#887124571147370547> to ask general questions.").setEphemeral(true).queue();
-                }
-                break;
-            default:
-                event.reply("I don't know what that command means or why I'm getting it, sorry!").setEphemeral(true).queue();
+        String command = controller.getCommand();
+        if (!event.getName().equals(command)) return;
+        String topicKey = event.getOption("topic").getAsString();
+        HelpTopic topic = help.getTopic(topicKey);
+        if (topic != null) {
+            String message = getTopicMessage(topic);
+            message = translateMessage(message);
+            ReplyAction action = event.reply(message);
+            action.setEphemeral(true);
+            addTopics(event.getMember(), action, message);
+            action.setEphemeral(true).queue();
+        } else {
+            String response = "I'm sorry, \"" + topicKey + "\" is not a valid topic!\nPlease use <#887124571147370547> to ask general questions.";
+            String emote = controller.getReactionEmote();
+            if (!emote.isEmpty()) {
+                response += "\nOr use the <:" + emote + "> reaction on your own message and I will respond.";
+            }
+            event.reply(response).setEphemeral(true).queue();
         }
     }
 
     public void registerCommands(Guild guild) {
+        final String command = controller.getCommand();
+        if (command.isEmpty()) return;
+
         CommandListUpdateAction commands = guild.updateCommands();
         commands.addCommands(
-                new CommandData("mhelp", "Show a specific help topic")
+                new CommandData(command, "Show a specific help topic")
                         .addOptions(new OptionData(OptionType.STRING, "topic", "The topic to show").setRequired(true))
         );
-        commands.queue(success -> controller.getLogger().info("Registered /mhelp command"), throwable -> controller.getLogger().log(Level.WARNING, "Could not register slash commands", throwable));
+        commands.queue(success -> controller.getLogger().info("Registered /" + command + " command"), throwable -> controller.getLogger().log(Level.WARNING, "Could not register slash commands", throwable));
     }
 
     protected void sendTranslateMessage(Message message) {
