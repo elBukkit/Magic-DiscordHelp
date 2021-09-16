@@ -224,11 +224,11 @@ public class DiscordChatListener extends ListenerAdapter {
                             }
                         }
                     }
-                    MessageAction editMessage = clickedMessage.editMessage(clickedMessage.getContentRaw());
+                    MessageAction editMessage;
                     if (keepButtons.isEmpty()) {
-                        editMessage.setActionRows();
+                        editMessage = clickedMessage.editMessageComponents();
                     } else {
-                        editMessage.setActionRow(keepButtons);
+                        editMessage = clickedMessage.editMessageComponents(ActionRow.of(keepButtons));
                     }
                     editMessage.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to remove join button from message " + id, throwable));
                 }
@@ -296,7 +296,9 @@ public class DiscordChatListener extends ListenerAdapter {
                     "\n" +
                     "Please try asking me a question, I may be able to help!\n" +
                     "\n" +
-                    "You may also browse the server FAQ <#827772240451207198> and <#808149802579132458> channels.\n" +
+                    "You may also browse the frequently asked questions <#827772240451207198> and <#808149802579132458> channels.\n" +
+                    "\n" +
+                    "And of course, make sure you have read the <#763882261183070229>!\n" +
                     "\n" +
                     "  🇺🇸 🇪🇸 🇫🇷 🇩🇪 🇮🇹 🇵🇹 🇯🇵 🇨🇳 🇰🇷 \n" +
                     "You can add a **flag reaction** to any message on this server to have it translated for you.";
