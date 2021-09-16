@@ -291,19 +291,9 @@ public class DiscordChatListener extends ListenerAdapter {
         List<TextChannel> helpChannels = guild.getTextChannelsByName(channelName, true);
         if (!helpChannels.isEmpty()) {
             MessageChannel helpChannel = helpChannels.get(0);
-            String welcomeMessage =
-                    "<:missile:763893315887693855>        Welcome to the Magic Discord Server " + member.getAsMention() + "!         <:missile:763893315887693855>\n" +
-                    "\n" +
-                    "Please try asking me a question, I may be able to help!\n" +
-                    "\n" +
-                    "You may also browse the frequently asked questions <#827772240451207198> and <#808149802579132458> channels.\n" +
-                    "\n" +
-                    "And of course, make sure you have read the <#763882261183070229>!\n" +
-                    "\n" +
-                    "  🇺🇸 🇪🇸 🇫🇷 🇩🇪 🇮🇹 🇵🇹 🇯🇵 🇨🇳 🇰🇷 \n" +
-                    "You can add a **flag reaction** to any message on this server to have it translated for you.";
+            String welcomeMessage = controller.getMagic().getMessages().get("discord.welcome");
+            welcomeMessage = welcomeMessage.replace("$member", member.getAsMention());
             MessageAction welcomeAction = helpChannel.sendMessage(welcomeMessage);
-
             Button supportButton = getVerifyButton(member);
             welcomeAction.setActionRow(supportButton);
             welcomeAction.queue(success -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send welcome message to " + member.getEffectiveName(), throwable));
@@ -373,16 +363,7 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     protected void sendTranslateMessage(Message message) {
-        String translateMessage = "🇺🇸 You can add a flag reaction to any message on this server to have it translated for you";
-        translateMessage += "\n🇪🇸 Puede agregar una reacción de bandera a cualquier mensaje en este servidor para que se lo traduzca";
-        translateMessage += "\n🇫🇷 Vous pouvez ajouter une réaction de drapeau à n'importe quel message sur ce serveur pour le faire traduire pour vous";
-        translateMessage += "\n🇩🇪 Sie können jeder Nachricht auf diesem Server eine Flaggenreaktion hinzufügen, um sie für Sie übersetzen zu lassen";
-        translateMessage += "\n🇮🇹 Puoi aggiungere una reazione di segnalazione a qualsiasi messaggio su questo server per averlo tradotto per te";
-        translateMessage += "\n🇵🇹 Você pode adicionar um sinalizador de reação a qualquer mensagem neste servidor para traduzi-la para você";
-        translateMessage += "\n🇯🇵 このサーバー上の任意のメッセージにフラグリアクションを追加して、メッセージを翻訳してもらうことができます";
-        translateMessage += "\n🇨🇳 您可以向此服务器上的任何消息添加标记反应，以便为您翻译";
-        translateMessage += "\n🇰🇷 이 서버의 모든 메시지에 플래그 반응을 추가하여 번역할 수 있습니다.";
-
+        String translateMessage = controller.getMagic().getMessages().get("discord.language");
         MessageAction response = message.reply(translateMessage);
         response.queue(sentMessage -> sentMessage.addReaction("🇺🇸").queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send language message response", throwable));
     }

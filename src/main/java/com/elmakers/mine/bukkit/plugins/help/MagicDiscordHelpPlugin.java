@@ -1,5 +1,11 @@
 package com.elmakers.mine.bukkit.plugins.help;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.logging.Level;
+
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -29,6 +35,13 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
             return;
         }
         this.magic = ((MagicPlugin)magicPlugin).getController();
+        YamlConfiguration messagesConfig = new YamlConfiguration();
+        try {
+            messagesConfig.load(new InputStreamReader(getResource("messages.yml"), "UTF-8"));
+            magic.getMessages().load(messagesConfig);
+        } catch (Exception ex) {
+            getLogger().log(Level.SEVERE, "Failed to load messages.yml resource", ex);
+        }
 
         token = getConfig().getString("token", "");
         channel = getConfig().getString("channel", "");

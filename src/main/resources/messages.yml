@@ -1,0 +1,23 @@
+discord:
+   language: |-
+      🇺🇸 You can add a flag reaction to any message on this server to have it translated for you
+      🇪🇸 Puede agregar una reacción de bandera a cualquier mensaje en este servidor para que se lo traduzca
+      🇫🇷 Vous pouvez ajouter une réaction de drapeau à n'importe quel message sur ce serveur pour le faire traduire pour vous
+      🇩🇪 Sie können jeder Nachricht auf diesem Server eine Flaggenreaktion hinzufügen, um sie für Sie übersetzen zu lassen
+      🇮🇹 Puoi aggiungere una reazione di segnalazione a qualsiasi messaggio su questo server per averlo tradotto per te
+      🇵🇹 Você pode adicionar um sinalizador de reação a qualquer mensagem neste servidor para traduzi-la para você
+      🇯🇵 このサーバー上の任意のメッセージにフラグリアクションを追加して、メッセージを翻訳してもらうことができます
+      🇨🇳 您可以向此服务器上的任何消息添加标记反应，以便为您翻译
+      🇰🇷 이 서버의 모든 메시지에 플래그 반응을 추가하여 번역할 수 있습니다.
+   welcome: |-
+      <:missile:763893315887693855>        Welcome to the Magic Discord Server $member!         <:missile:763893315887693855>
+      
+      Please try asking me a question, I may be able to help!
+      
+      You may also browse the frequently asked questions <#827772240451207198> and <#808149802579132458> channels.
+      
+      And of course, make sure you have read the <#763882261183070229>!
+      
+         🇺🇸 🇪🇸 🇫🇷 🇩🇪 🇮🇹 🇵🇹 🇯🇵 🇨🇳 🇰🇷
+      
+      You can add a **flag reaction** to any message on this server to have it translated for you.
