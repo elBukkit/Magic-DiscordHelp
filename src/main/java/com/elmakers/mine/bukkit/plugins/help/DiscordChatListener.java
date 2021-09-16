@@ -175,6 +175,7 @@ public class DiscordChatListener extends ListenerAdapter {
         if (channel.getName().equals(controller.getIgnoreChannel())) return;
         if (!channel.getName().equals(controller.getChannel())) return;
         Message message = event.getMessage();
+        if (message.getMessageReference() != null) return;
         respondToMessage(message);
     }
 
