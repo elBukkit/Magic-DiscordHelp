@@ -4,7 +4,7 @@
     <groupId>com.elmakers.mine.bukkit.plugins</groupId>
     <artifactId>Magic-DiscordHelp</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <name>Magic Discord help</name>
+    <name>Magic Discord Help</name>
 
     <properties>
         <magic.version>10.1-SNAPSHOT</magic.version>
@@ -31,7 +31,7 @@
         <dependency>
             <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>
-            <version>4.3.0_310</version>
+            <version>4.3.0_324</version>
             <exclusions>
                 <exclusion>
                     <groupId>club.minnced</groupId>

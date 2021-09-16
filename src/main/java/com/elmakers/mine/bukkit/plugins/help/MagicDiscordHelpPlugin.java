@@ -14,6 +14,7 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
     private String reactionChannel;
     private String ignoreChannel;
     private String reactionEmote;
+    private String joinRole;
     private JDA jda = null;
     private MagicController magic;
 
@@ -27,11 +28,12 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
         }
         this.magic = (MagicController)((MagicPlugin)magicPlugin).getController();
 
-        token = getConfig().getString("token");
-        channel = getConfig().getString("channel");
-        reactionChannel = getConfig().getString("reaction_channel");
-        ignoreChannel = getConfig().getString("ignore_channel");
-        reactionEmote = getConfig().getString("reaction_emote");
+        token = getConfig().getString("token", "");
+        channel = getConfig().getString("channel", "");
+        reactionChannel = getConfig().getString("reaction_channel", "");
+        ignoreChannel = getConfig().getString("ignore_channel", "");
+        reactionEmote = getConfig().getString("reaction_emote", "");
+        joinRole = getConfig().getString("join_role", "");
         if (token == null || token.isEmpty()) {
             getLogger().warning("Please put your bot token in config.yml, otherwise this plugin can't work");
         } else {
@@ -63,6 +65,10 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
 
     public String getReactionEmote() {
         return reactionEmote;
+    }
+
+    public String getJoinRole() {
+        return joinRole;
     }
 
     public MagicController getMagic() {

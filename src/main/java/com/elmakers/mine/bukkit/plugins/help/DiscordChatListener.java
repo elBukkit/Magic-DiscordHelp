@@ -1,7 +1,6 @@
 package com.elmakers.mine.bukkit.plugins.help;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -17,20 +16,27 @@ import com.elmakers.mine.bukkit.utility.help.HelpTopic;
 import com.elmakers.mine.bukkit.utility.help.HelpTopicMatch;
 import com.google.common.collect.ImmutableSet;
 
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageReaction;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.Button;
+import net.dv8tion.jda.api.interactions.components.Component;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyAction;
 
 public class DiscordChatListener extends ListenerAdapter {
+    private static final int MAX_BUTTONS = 5;
     private static final Pattern MHELP_PATTERN = Pattern.compile("/mhelp ([a-z_A-Z\\.]*)");
     private final MagicDiscordHelpPlugin controller;
     private final Help help;
@@ -46,30 +52,51 @@ public class DiscordChatListener extends ListenerAdapter {
         responded(originalMessage);
         message = translateMessage(message);
         MessageAction action = originalMessage.reply(message);
-        Button[] buttons = new Button[buttonIds.size()];
-        for (int i = 0; i < buttons.length; i++) {
+        Button verifyButton = getJoinButton(originalMessage);
+        int buttonCount = Math.min(MAX_BUTTONS, buttonIds.size());
+        int componentCount = buttonCount;
+        if (verifyButton != null) {
+            if (buttonCount == MAX_BUTTONS) {
+                buttonCount--;
+            } else {
+                componentCount++;
+            }
+        }
+        Button[] buttons = new Button[componentCount];
+        for (int i = 0; i < buttonCount; i++) {
             buttons[i] = Button.primary("help:" + buttonIds.get(i), buttonLabels.get(i));
+        }
+        if (verifyButton != null) {
+            buttons[buttons.length - 1] = verifyButton;
         }
         action.setActionRow(buttons);
         action.queue(sentMessage -> sentMessage.suppressEmbeds(true).queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in channel " + originalMessage.getChannel(), throwable));
     }
 
-    protected void addTopics(MessageAction action, String message) {
-        List<Button> buttons = getTopicButtons(message);
+    protected void addTopics(Member member, MessageAction action, String message) {
+        List<Button> buttons = getTopicButtons(member, message);
         if (!buttons.isEmpty()) {
             action.setActionRow(buttons);
         }
     }
 
-    protected List<Button> getTopicButtons(String message) {
+    protected List<Button> getTopicButtons(Member member, String message) {
         List<Button> buttons = new ArrayList<>();
         Matcher m = MHELP_PATTERN.matcher(message);
-        while (m.find()) {
+        int maxButtons = MAX_BUTTONS;
+        Button joinButton = getJoinButton(member);
+        if (joinButton != null) {
+            maxButtons--;
+        }
+        while (m.find() && buttons.size() < maxButtons) {
             String topicKey = m.group(1);
             HelpTopic topic = help.getTopic(topicKey);
             if (topic == null) continue;
             Button button = Button.primary("help:" + topicKey, topic.getTitle());
             buttons.add(button);
+        }
+        if (joinButton != null) {
+            buttons.add(joinButton);
         }
         return buttons;
     }
@@ -78,7 +105,7 @@ public class DiscordChatListener extends ListenerAdapter {
         responded(authorMessage);
         message = translateMessage(message);
         MessageAction action = authorMessage.reply(message);
-        addTopics(action, message);
+        addTopics(authorMessage.getMember(), action, message);
         action.queue(sentMessage -> sentMessage.suppressEmbeds(true).queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message to channel " + authorMessage.getChannel().getName(), throwable));
     }
 
@@ -124,23 +151,107 @@ public class DiscordChatListener extends ListenerAdapter {
         if (button == null) return;
         String id = button.getId();
         if (id == null) return;
-        if (!id.startsWith("help:")) return;
-        final String topicId = id.substring(5);
-        HelpTopic topic = help.getTopic(topicId);
-        responded(event.getMessage());
-        if (topic != null) {
-            String message = getTopicMessage(topic);
-            message = translateMessage(message);
-            ReplyAction action = event.reply(message);
-            action.setEphemeral(true);
-            List<Button> buttons = getTopicButtons(message);
-            if (!buttons.isEmpty()) {
-                action.addActionRow(buttons);
+        if (id.startsWith("help:")) {
+            final String topicId = id.substring(5);
+            HelpTopic topic = help.getTopic(topicId);
+            Message originalMessage = event.getMessage();
+            responded(originalMessage);
+            if (topic != null) {
+                String message = getTopicMessage(topic);
+                message = translateMessage(message);
+                ReplyAction action = event.reply(message);
+                action.setEphemeral(true);
+                List<Button> buttons = getTopicButtons(event.getMember(), message);
+                if (!buttons.isEmpty()) {
+                    action.addActionRow(buttons);
+                }
+                action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
+            } else {
+                event.reply("Could not find help topic: " + id).queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click: " + topicId, throwable));
             }
-            action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
-        } else {
-            event.reply("Could not find help topic: " + id).queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click: " + topicId, throwable));
         }
+        if (id.startsWith("verify:")) {
+            final String memberId = id.substring(7);
+            Member member = event.getMember();
+            if (member == null) return;
+
+            Guild guild = event.getGuild();
+            Role role = getJoinRole(guild);
+            if (role == null) {
+                controller.getLogger().warning("Getting verification button clicks without a join role");
+                return;
+            }
+
+            if (!member.getRoles().contains(role)) {
+                ReplyAction action = event.reply("You are already verified! Go to <#580101207364861954> if you need some human support.");
+                action.setEphemeral(true);
+                action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
+                return;
+            }
+
+            if (!member.getId().equals(memberId)) {
+                ReplyAction action = event.reply("That button was not meant for you. Please ask some questions, or click the button on this message.");
+                action.setEphemeral(true);
+                action.addActionRow(getVerifyButton(member));
+                action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
+                return;
+            }
+
+            guild.removeRoleFromMember(member, role).queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to remove role from user " + member.getEffectiveName(), throwable));
+            ReplyAction action = event.reply("You are now verified and have access to the full server. Go to <#580101207364861954> if you need some human support.");
+            action.setEphemeral(true);
+            action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
+
+            // Remove the join button when not on an ephemeral messages
+            Message clickedMessage = event.getMessage();
+            if (!clickedMessage.getFlags().contains(Message.MessageFlag.EPHEMERAL)) {
+                List<ActionRow> actionRows = clickedMessage.getActionRows();
+                if (!actionRows.isEmpty()) {
+                    List<Component> keepButtons = new ArrayList<>();
+                    for (ActionRow row : actionRows) {
+                        for (Component component : row.getComponents()) {
+                            if (!component.equals(button)) {
+                                keepButtons.add(component);
+                            }
+                        }
+                    }
+                    MessageAction editMessage = clickedMessage.editMessage(clickedMessage.getContentRaw());
+                    if (keepButtons.isEmpty()) {
+                        editMessage.setActionRows();
+                    } else {
+                        editMessage.setActionRow(keepButtons);
+                    }
+                    editMessage.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to remove join button from message " + id, throwable));
+                }
+            }
+        }
+    }
+
+    private Button getJoinButton(Message message) {
+        User author = message.getAuthor();
+        Member member = message.getGuild().getMember(author);
+        return getJoinButton(member);
+    }
+
+    private Button getJoinButton(Member member) {
+        Button verifyButton = null;
+        Role joinRole = getJoinRole(member.getGuild());
+        if (joinRole != null) {
+            if (member != null && member.getRoles().contains(joinRole)) {
+                verifyButton = getVerifyButton(member);
+            }
+        }
+        return verifyButton;
+    }
+
+    private Role getJoinRole(Guild guild) {
+        String joinRole = controller.getJoinRole();
+        if (joinRole.isEmpty()) return null;
+        Role role = guild.getRoleById(joinRole);
+        if (role == null) {
+            controller.getLogger().warning("Invalid join role id: " + joinRole);
+        }
+        return role;
     }
 
     @Override
@@ -154,6 +265,42 @@ public class DiscordChatListener extends ListenerAdapter {
         String reactionCode = event.getReaction().getReactionEmote().getAsReactionCode();
         if (!reactionCode.equals(controller.getReactionEmote())) return;
         event.retrieveMessage().queue(this::checkReactionAdd);
+    }
+
+    @Override
+    public void onGuildMemberJoin(GuildMemberJoinEvent event) {
+        Guild guild = event.getGuild();
+        Role role = getJoinRole(guild);
+        if (role == null) {
+            return;
+        }
+
+        Member member = event.getMember();
+        guild.addRoleToMember(member, role).queue(success -> controller.getLogger().info("Assigned join role to " + member.getEffectiveName()), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to assign role to " + member.getEffectiveName(), throwable));
+
+        String channelName = controller.getChannel();
+        List<TextChannel> helpChannels = guild.getTextChannelsByName(channelName, true);
+        if (!helpChannels.isEmpty()) {
+            MessageChannel helpChannel = helpChannels.get(0);
+            String welcomeMessage =
+                    "<:missile:763893315887693855>        Welcome to the Magic Discord Server " + member.getAsMention() + "!         <:missile:763893315887693855>\n" +
+                    "\n" +
+                    "Please try asking me a question first! If it doesn't work out, I will direct you to a human for support.\n" +
+                    "\n" +
+                    "You may also browse the server FAQ <#827772240451207198> and <#808149802579132458> channels.\n" +
+                    "\n" +
+                    "  🇺🇸 🇪🇸 🇫🇷 🇩🇪 🇮🇹 🇵🇹 🇯🇵 🇨🇳 🇰🇷 \n" +
+                    "You can add a **flag reaction** to any message on this server to have it translated for you.";
+            MessageAction welcomeAction = helpChannel.sendMessage(welcomeMessage);
+
+            Button supportButton = getVerifyButton(member);
+            welcomeAction.setActionRow(supportButton);
+            welcomeAction.queue(success -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send welcome message to " + member.getEffectiveName(), throwable));
+        }
+    }
+
+    protected Button getVerifyButton(Member member) {
+        return Button.success("verify:" + member.getId(), "I Need More Support, Please Let Me In");
     }
 
     protected void checkReactionAdd(Message message) {
