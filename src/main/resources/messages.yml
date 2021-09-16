@@ -38,5 +38,5 @@ help:
          `<tags text="hello hi miha">`
       birthday: |-
          `<title text="Miha's Birthday">`
-         `<p>`I was born on 2021-09-14
-         `<tags text="birth age miha">`
+         `<p>`I was born on 2021-09-13
+         `<tags text="birth age miha born">`
