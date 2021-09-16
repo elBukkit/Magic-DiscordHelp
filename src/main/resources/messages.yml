@@ -11,7 +11,11 @@ discord:
       🇰🇷 이 서버의 모든 메시지에 플래그 반응을 추가하여 번역할 수 있습니다.
    welcome: |-
       <:missile:763893315887693855>        Welcome to the Magic Discord Server $member!         <:missile:763893315887693855>
-      
+
+      Hello, I am the **M**agic **I**nteractive **H**elp **A**utomaton
+
+      You may call me **Miha** for short <:miha:887420186632802345>
+
       Please try asking me a question, I may be able to help!
       
       You may also browse the frequently asked questions <#827772240451207198> and <#808149802579132458> channels.
@@ -21,3 +25,18 @@ discord:
          🇺🇸 🇪🇸 🇫🇷 🇩🇪 🇮🇹 🇵🇹 🇯🇵 🇨🇳 🇰🇷
       
       You can add a **flag reaction** to any message on this server to have it translated for you.
+
+help:
+   discord:
+      miha: |-
+         `<title text="Hello, From Miha">`
+         `<p>`Hello, I am Miha! <:miha:887420186632802345>
+         `<p>`How are you doing?
+         `<p>`I can't actually chat with you, sorry.
+         `<p>`Maybe one day I'll be sentient?
+         `<p>`For now, you can just ask me some questions about Magic.
+         `<tags text="hello hi miha">`
+      birthday: |-
+         `<title text="Miha's Birthday">`
+         `<p>`I was born on 2021-09-14
+         `<tags text="birth age miha">`
