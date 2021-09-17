@@ -13,6 +13,7 @@ import com.elmakers.mine.bukkit.magic.MagicController;
 import com.elmakers.mine.bukkit.magic.MagicPlugin;
 
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Activity;
 
 public class MagicDiscordHelpPlugin extends JavaPlugin {
     private String token;
@@ -108,6 +109,7 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
 
     protected void setJDA(JDA jda) {
         this.jda = jda;
+        jda.getPresence().setActivity(Activity.playing(magic.getMessages().get("discord.status")));
         getLogger().info("Connected to the Discord server!");
     }
 }
