@@ -116,6 +116,8 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     protected String getSimpleMessage(String message) {
+        // Do these only here to avoid escaping the bolding we do below
+        message = message.replace("*", "\\*");
         return ChatUtils.getSimpleMessage(message, false, " **", "**");
     }
 
@@ -125,6 +127,7 @@ public class DiscordChatListener extends ListenerAdapter {
         if (message.length() >= 2000) {
             message = message.substring(0, 1996) + "...";
         }
+        message = message.replace("_", "\\_");
         return ChatColor.stripColor(message);
     }
 
