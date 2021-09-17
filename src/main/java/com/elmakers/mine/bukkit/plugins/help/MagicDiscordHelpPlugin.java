@@ -18,6 +18,7 @@ import net.dv8tion.jda.api.entities.Activity;
 public class MagicDiscordHelpPlugin extends JavaPlugin {
     private String token;
     private String channel;
+    private String commandChannel;
     private String reactionChannel;
     private String ignoreChannel;
     private String reactionEmote;
@@ -47,13 +48,14 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
 
         token = getConfig().getString("token", "");
         channel = getConfig().getString("channel", "");
-        reactionChannel = getConfig().getString("reaction_channel", "");
+        commandChannel = getConfig().getString("command_channel", "*");
+        reactionChannel = getConfig().getString("reaction_channel", "*");
         ignoreChannel = getConfig().getString("ignore_channel", "");
         reactionEmote = getConfig().getString("reaction_emote", "");
         guildId = getConfig().getString("guild", "");
         joinRole = getConfig().getString("join_role", "");
-        command = getConfig().getString("command", "");
-        debug = getConfig().getBoolean("debug");
+        command = getConfig().getString("command", "mhelp");
+        debug = getConfig().getBoolean("debug", false);
         if (token == null || token.isEmpty()) {
             getLogger().warning("Please put your bot token in config.yml, otherwise this plugin can't work");
         } else {
@@ -85,6 +87,10 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
 
     public String getReactionEmote() {
         return reactionEmote;
+    }
+
+    public String getCommandChannel() {
+        return commandChannel;
     }
 
     public String getJoinRole() {

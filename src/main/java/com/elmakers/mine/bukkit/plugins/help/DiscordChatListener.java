@@ -323,7 +323,10 @@ public class DiscordChatListener extends ListenerAdapter {
     @Override
     public void onSlashCommand(SlashCommandEvent event) {
         MessageChannel channel = event.getChannel();
-        if (channel.getName().equals(controller.getIgnoreChannel())) return;
+        String channelName = channel.getName();
+        if (channelName.equals(controller.getIgnoreChannel())) return;
+        String commandChannel = controller.getCommandChannel();
+        if (!commandChannel.equals("*") && !channelName.equals(commandChannel)) return;
 
         String command = controller.getCommand();
         if (!event.getName().equals(command)) return;
