@@ -214,6 +214,26 @@ public class DiscordChatListener extends ListenerAdapter {
                 }
             }
         }
+        if (id.startsWith("next:")) {
+            String remainder = id.substring(5);
+            int next = 1;
+            if (!remainder.trim().isEmpty()) {
+                try {
+                    next = Integer.parseInt(remainder);
+                } catch (Exception ex) {
+                    controller.getLogger().warning("Invalid next index: " + remainder);
+                }
+            }
+            // TODO: Find the referenced message
+            Message clickedMessage = event.getMessage();
+            List<Button> buttons = new ArrayList<>();
+            String msg = clickedMessage.getContentDisplay();
+            String response = getResponse(msg, buttons, next);
+            ReplyAction action = event.reply(response);
+            addButtons(event.getMember(), action, buttons);
+            action.setEphemeral(true);
+            action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
+        }
     }
 
     private Button getJoinButton(Member member) {
@@ -335,6 +355,19 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     protected String getResponse(String msg, List<Button> buttons) {
+        return getResponse(msg, buttons, false, 0);
+    }
+
+    protected String getResponse(String msg, List<Button> buttons, int startingAt) {
+        return getResponse(msg, buttons, false, startingAt);
+    }
+
+
+    protected String getTopResponse(String msg, List<Button> buttons) {
+        return getResponse(msg, buttons, true, 0);
+    }
+
+    private String getResponse(String msg, List<Button> buttons, boolean topOnly, int startingAt) {
         String[] pieces = ChatUtils.getWords(msg);
         if (pieces.length == 0) {
             return controller.getMagic().getMessages().get("discord.empty");
@@ -351,11 +384,22 @@ public class DiscordChatListener extends ListenerAdapter {
             keywords.add(arg.toLowerCase());
         }
         List<HelpTopicMatch> matches = help.findMatches(keywords);
+        while (!matches.isEmpty() && startingAt > 0) {
+            matches.remove(0);
+            startingAt--;
+        }
         if (matches.isEmpty()) {
             return controller.getMagic().getMessages().get("discord.not_found");
         }
         if (matches.size() == 1) {
             return getTopicMessage(matches.get(0).getTopic(), buttons);
+        }
+        if (topOnly) {
+            HelpTopic topic = matches.get(0).getTopic();
+            String message = getTopicMessage(topic, buttons);
+            Button showAllButton = Button.success("next:1", "Other Answers");
+            buttons.add(0, showAllButton);
+            return message;
         }
         StringBuilder sb = new StringBuilder();
         sb.append("I Found ");
@@ -402,7 +446,7 @@ public class DiscordChatListener extends ListenerAdapter {
         }
 
         List<Button> buttons = new ArrayList<>();
-        String response = getResponse(msg, buttons);
+        String response = getTopResponse(msg, buttons);
         respond(message, response, buttons);
     }
 }
