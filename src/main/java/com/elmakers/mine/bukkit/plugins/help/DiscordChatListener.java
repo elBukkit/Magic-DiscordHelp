@@ -53,12 +53,9 @@ public class DiscordChatListener extends ListenerAdapter {
         help = controller.getMagic().getMessages().getHelp();
     }
 
-    protected void respond(Message originalMessage, String message, List<Button> buttons) {
-        responded(originalMessage);
-        message = translateMessage(message);
-        MessageAction action = originalMessage.reply(message);
+    protected List<Button> processButtons(Member member, List<Button> buttons) {
         int maxButtons = MAX_BUTTONS;
-        Button joinButton = getJoinButton(originalMessage);
+        Button joinButton = getJoinButton(member);
         if (joinButton != null) {
             maxButtons--;
         }
@@ -68,57 +65,39 @@ public class DiscordChatListener extends ListenerAdapter {
         if (joinButton != null) {
             buttons.add(joinButton);
         }
-        if (!buttons.isEmpty()) {
-            action.setActionRow(buttons);
-        }
-        action.queue(sentMessage -> sentMessage.suppressEmbeds(true).queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in channel " + originalMessage.getChannel(), throwable));
+        return buttons;
     }
 
-    protected void addTopics(Member member, MessageAction action, String message) {
-        List<Button> buttons = getTopicButtons(member, message);
+    protected void addButtons(Member member, ReplyAction action, List<Button> buttons) {
         if (!buttons.isEmpty()) {
-            action.setActionRow(buttons);
-        }
-    }
-
-    protected void addTopics(Member member, ReplyAction action, String message) {
-        List<Button> buttons = getTopicButtons(member, message);
-        if (!buttons.isEmpty()) {
+            processButtons(member, buttons);
             action.addActionRow(buttons);
         }
     }
 
-    protected List<Button> getTopicButtons(Member member, String message) {
-        List<Button> buttons = new ArrayList<>();
-        Matcher m = MHELP_PATTERN.matcher(message);
-        int maxButtons = MAX_BUTTONS;
-        Button joinButton = getJoinButton(member);
-        if (joinButton != null) {
-            maxButtons--;
+    protected void addButtons(Member member, MessageAction action, List<Button> buttons) {
+        if (!buttons.isEmpty()) {
+            processButtons(member, buttons);
+            action.setActionRow(buttons);
         }
-        while (m.find() && buttons.size() < maxButtons) {
+    }
+
+    protected void respond(Message originalMessage, String message, List<Button> buttons) {
+        responded(originalMessage);
+        MessageAction action = originalMessage.reply(message);
+        addButtons(originalMessage.getMember(), action, buttons);
+        action.queue(sentMessage -> sentMessage.suppressEmbeds(true).queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in channel " + originalMessage.getChannel(), throwable));
+    }
+
+    protected void getTopicButtons(String message, List<Button> buttons) {
+        Matcher m = MHELP_PATTERN.matcher(message);
+        while (m.find() && buttons.size() < MAX_BUTTONS) {
             String topicKey = m.group(1);
             HelpTopic topic = help.getTopic(topicKey);
             if (topic == null) continue;
             Button button = Button.primary("help:" + topicKey, topic.getTitle());
             buttons.add(button);
         }
-        if (joinButton != null) {
-            buttons.add(joinButton);
-        }
-        return buttons;
-    }
-
-    protected void respond(Message authorMessage, String message) {
-        responded(authorMessage);
-        message = translateMessage(message);
-        MessageAction action = authorMessage.reply(message);
-        addTopics(authorMessage.getMember(), action, message);
-        action.queue(sentMessage -> sentMessage.suppressEmbeds(true).queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message to channel " + authorMessage.getChannel().getName(), throwable));
-    }
-
-    protected void respond(Message authorMessage, HelpTopic topic) {
-        respond(authorMessage, getTopicMessage(topic));
     }
 
     protected void responded(Message authorMessage) {
@@ -128,9 +107,11 @@ public class DiscordChatListener extends ListenerAdapter {
         }
     }
 
-    protected String getTopicMessage(HelpTopic topic) {
+    protected String getTopicMessage(HelpTopic topic, List<Button> buttons) {
         String topicText = topic.getText();
         topicText = getSimpleMessage(topicText);
+        topicText = translateMessage(topicText);
+        getTopicButtons(topicText, buttons);
         return topicText;
     }
 
@@ -165,11 +146,11 @@ public class DiscordChatListener extends ListenerAdapter {
             Message originalMessage = event.getMessage();
             responded(originalMessage);
             if (topic != null) {
-                String message = getTopicMessage(topic);
-                message = translateMessage(message);
+                List<Button> buttons = new ArrayList<>();
+                String message = getTopicMessage(topic, buttons);
                 ReplyAction action = event.reply(message);
                 action.setEphemeral(true);
-                addTopics(event.getMember(), action, message);
+                addButtons(event.getMember(), action, buttons);
                 action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
             } else {
                 event.reply("Could not find help topic: " + id).queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click: " + topicId, throwable));
@@ -232,12 +213,6 @@ public class DiscordChatListener extends ListenerAdapter {
         }
     }
 
-    private Button getJoinButton(Message message) {
-        User author = message.getAuthor();
-        Member member = message.getGuild().getMember(author);
-        return getJoinButton(member);
-    }
-
     private Button getJoinButton(Member member) {
         Button verifyButton = null;
         Role joinRole = getJoinRole(member.getGuild());
@@ -290,8 +265,7 @@ public class DiscordChatListener extends ListenerAdapter {
             String welcomeMessage = controller.getMagic().getMessages().get("discord.welcome");
             welcomeMessage = welcomeMessage.replace("$member", member.getAsMention());
             MessageAction welcomeAction = helpChannel.sendMessage(welcomeMessage);
-            Button supportButton = getVerifyButton(member);
-            welcomeAction.setActionRow(supportButton);
+            welcomeAction.setActionRow(getVerifyButton(member));
             welcomeAction.queue(success -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send welcome message to " + member.getEffectiveName(), throwable));
         }
     }
@@ -335,9 +309,7 @@ public class DiscordChatListener extends ListenerAdapter {
         List<Button> buttons = new ArrayList<>();
         String response = getResponse(topic, buttons);
         ReplyAction reply = event.reply(response).setEphemeral(true);
-        if (!buttons.isEmpty()) {
-            reply.addActionRow(buttons);
-        }
+        addButtons(event.getMember(), reply, buttons);
         reply.queue();
     }
 
@@ -368,7 +340,7 @@ public class DiscordChatListener extends ListenerAdapter {
         if (pieces.length == 1) {
             HelpTopic topic = help.getTopic(pieces[0]);
             if (topic != null) {
-                return getTopicMessage(topic);
+                return getTopicMessage(topic, buttons);
             }
         }
         List<String> keywords = new ArrayList<>();
@@ -380,7 +352,7 @@ public class DiscordChatListener extends ListenerAdapter {
             return controller.getMagic().getMessages().get("discord.not_found");
         }
         if (matches.size() == 1) {
-            return getTopicMessage(matches.get(0).getTopic());
+            return getTopicMessage(matches.get(0).getTopic(), buttons);
         }
         StringBuilder sb = new StringBuilder();
         sb.append("I Found ");
@@ -392,7 +364,7 @@ public class DiscordChatListener extends ListenerAdapter {
 
         int count = 0;
         for (HelpTopicMatch match : matches) {
-            if (count++ >= 5) break;
+            if (count++ >= MAX_BUTTONS) break;
             String title = match.getTopic().getTitle();
             String summary = match.getSummary(help, keywords, title, 100, "\uFEFF**", "**\uFEFF");
             sb.append("\n");
