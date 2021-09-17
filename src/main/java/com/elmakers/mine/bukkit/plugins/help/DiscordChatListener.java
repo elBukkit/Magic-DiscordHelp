@@ -409,7 +409,7 @@ public class DiscordChatListener extends ListenerAdapter {
         sb.append(matches.size());
         sb.append(" matches");
         if (matches.size() > 5) {
-            sb.append(" (but only showing top 5)");
+            sb.append(", here are the top 5");
         }
         List<String> buttonLabels = new ArrayList<>();
         List<String> buttonIds = new ArrayList<>();
