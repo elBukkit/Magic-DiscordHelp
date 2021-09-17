@@ -17,3 +17,6 @@ join_role:
 # This is used for registering guild commands
 guild:
 command: mhelp
+
+# Turn on relevance displays and other debug info
+debug: false

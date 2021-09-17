@@ -368,6 +368,10 @@ public class DiscordChatListener extends ListenerAdapter {
             String title = match.getTopic().getTitle();
             String summary = match.getSummary(help, keywords, title, 100, "\uFEFF**", "**\uFEFF");
             sb.append("\n");
+            if (controller.isDebug()) {
+                int relevance = (int)(100.0 * match.getRelevance());
+                sb.append(relevance + ": ");
+            }
             sb.append(title);
             sb.append(" : ");
             sb.append(summary);

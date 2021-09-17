@@ -23,6 +23,7 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
     private String joinRole;
     private String guildId;
     private String command;
+    private boolean debug;
     private JDA jda = null;
     private MagicController magic;
 
@@ -51,6 +52,7 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
         guildId = getConfig().getString("guild", "");
         joinRole = getConfig().getString("join_role", "");
         command = getConfig().getString("command", "");
+        debug = getConfig().getBoolean("debug");
         if (token == null || token.isEmpty()) {
             getLogger().warning("Please put your bot token in config.yml, otherwise this plugin can't work");
         } else {
@@ -94,6 +96,10 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
 
     public String getGuild() {
         return guildId;
+    }
+
+    public boolean isDebug() {
+        return debug;
     }
 
     public MagicController getMagic() {
