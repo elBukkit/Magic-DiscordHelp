@@ -53,28 +53,24 @@ public class DiscordChatListener extends ListenerAdapter {
         help = controller.getMagic().getMessages().getHelp();
     }
 
-    protected void respond(Message originalMessage, String message, List<String> buttonIds, List<String> buttonLabels) {
+    protected void respond(Message originalMessage, String message, List<Button> buttons) {
         responded(originalMessage);
         message = translateMessage(message);
         MessageAction action = originalMessage.reply(message);
-        Button verifyButton = getJoinButton(originalMessage);
-        int buttonCount = Math.min(MAX_BUTTONS, buttonIds.size());
-        int componentCount = buttonCount;
-        if (verifyButton != null) {
-            if (buttonCount == MAX_BUTTONS) {
-                buttonCount--;
-            } else {
-                componentCount++;
-            }
+        int maxButtons = MAX_BUTTONS;
+        Button joinButton = getJoinButton(originalMessage);
+        if (joinButton != null) {
+            maxButtons--;
         }
-        Button[] buttons = new Button[componentCount];
-        for (int i = 0; i < buttonCount; i++) {
-            buttons[i] = Button.primary("help:" + buttonIds.get(i), buttonLabels.get(i));
+        if (buttons.size() > maxButtons) {
+            buttons = buttons.subList(0, maxButtons - 1);
         }
-        if (verifyButton != null) {
-            buttons[buttons.length - 1] = verifyButton;
+        if (joinButton != null) {
+            buttons.add(joinButton);
         }
-        action.setActionRow(buttons);
+        if (!buttons.isEmpty()) {
+            action.setActionRow(buttons);
+        }
         action.queue(sentMessage -> sentMessage.suppressEmbeds(true).queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in channel " + originalMessage.getChannel(), throwable));
     }
 
@@ -127,7 +123,7 @@ public class DiscordChatListener extends ListenerAdapter {
 
     protected void responded(Message authorMessage) {
         String responseReaction = controller.getReactionEmote();
-        if (!responseReaction.isEmpty()) {
+        if (!responseReaction.isEmpty() && !authorMessage.getFlags().contains(Message.MessageFlag.EPHEMERAL)) {
             authorMessage.addReaction(responseReaction).queue();
         }
     }
@@ -329,25 +325,20 @@ public class DiscordChatListener extends ListenerAdapter {
 
     @Override
     public void onSlashCommand(SlashCommandEvent event) {
+        MessageChannel channel = event.getChannel();
+        if (channel.getName().equals(controller.getIgnoreChannel())) return;
+
         String command = controller.getCommand();
         if (!event.getName().equals(command)) return;
-        String topicKey = event.getOption("topic").getAsString();
-        HelpTopic topic = help.getTopic(topicKey);
-        if (topic != null) {
-            String message = getTopicMessage(topic);
-            message = translateMessage(message);
-            ReplyAction action = event.reply(message);
-            action.setEphemeral(true);
-            addTopics(event.getMember(), action, message);
-            action.setEphemeral(true).queue();
-        } else {
-            String response = "I'm sorry, \"" + topicKey + "\" is not a valid topic!\nPlease use <#887124571147370547> to ask general questions.";
-            String emote = controller.getReactionEmote();
-            if (!emote.isEmpty()) {
-                response += "\nOr use the <:" + emote + "> reaction on your own message and I will respond.";
-            }
-            event.reply(response).setEphemeral(true).queue();
+        String topic = event.getOption("topic").getAsString();
+
+        List<Button> buttons = new ArrayList<>();
+        String response = getResponse(topic, buttons);
+        ReplyAction reply = event.reply(response).setEphemeral(true);
+        if (!buttons.isEmpty()) {
+            reply.addActionRow(buttons);
         }
+        reply.queue();
     }
 
     public void registerCommands(Guild guild) {
@@ -368,6 +359,53 @@ public class DiscordChatListener extends ListenerAdapter {
         response.queue(sentMessage -> sentMessage.addReaction("🇺🇸").queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send language message response", throwable));
     }
 
+    protected String getResponse(String msg, List<Button> buttons) {
+        String[] pieces = ChatUtils.getWords(msg);
+        if (pieces.length == 0) {
+            return controller.getMagic().getMessages().get("discord.empty");
+        }
+
+        if (pieces.length == 1) {
+            HelpTopic topic = help.getTopic(pieces[0]);
+            if (topic != null) {
+                return getTopicMessage(topic);
+            }
+        }
+        List<String> keywords = new ArrayList<>();
+        for (String arg : pieces) {
+            keywords.add(arg.toLowerCase());
+        }
+        List<HelpTopicMatch> matches = help.findMatches(keywords);
+        if (matches.isEmpty()) {
+            return controller.getMagic().getMessages().get("discord.not_found");
+        }
+        if (matches.size() == 1) {
+            return getTopicMessage(matches.get(0).getTopic());
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("I Found ");
+        sb.append(matches.size());
+        sb.append(" matches");
+        if (matches.size() > 5) {
+            sb.append(", here are the top 5");
+        }
+
+        int count = 0;
+        for (HelpTopicMatch match : matches) {
+            if (count++ >= 5) break;
+            String title = match.getTopic().getTitle();
+            String summary = match.getSummary(help, keywords, title, 100, "\uFEFF**", "**\uFEFF");
+            sb.append("\n");
+            sb.append(title);
+            sb.append(" : ");
+            sb.append(summary);
+            Button button = Button.primary("help:" + match.getTopic().getKey(), title);
+            buttons.add(button);
+        }
+
+        return sb.toString();
+    }
+
     protected void respondToMessage(Message message) {
         String msg = message.getContentDisplay();
         User author = message.getAuthor();
@@ -381,51 +419,9 @@ public class DiscordChatListener extends ListenerAdapter {
                 }
             }
         }
-        String[] pieces = ChatUtils.getWords(msg);
-        if (pieces.length == 0) return;
 
-        if (pieces.length == 1) {
-            HelpTopic topic = help.getTopic(pieces[0]);
-            if (topic != null) {
-                respond(message, topic);
-                return;
-            }
-        }
-        List<String> keywords = new ArrayList<>();
-        for (String arg : pieces) {
-            keywords.add(arg.toLowerCase());
-        }
-        List<HelpTopicMatch> matches = help.findMatches(keywords);
-        if (matches.isEmpty()) {
-            respond(message, "404: Sorry I have no idea what you're talking about!");
-            return;
-        }
-        if (matches.size() == 1) {
-            respond(message, matches.get(0).getTopic());
-            return;
-        }
-        StringBuilder sb = new StringBuilder();
-        sb.append("I Found ");
-        sb.append(matches.size());
-        sb.append(" matches");
-        if (matches.size() > 5) {
-            sb.append(", here are the top 5");
-        }
-        List<String> buttonLabels = new ArrayList<>();
-        List<String> buttonIds = new ArrayList<>();
-        int count = 0;
-        for (HelpTopicMatch match : matches) {
-            if (count++ >= 5) break;
-            String title = match.getTopic().getTitle();
-            String summary = match.getSummary(help, keywords, title, 100, "\uFEFF**", "**\uFEFF");
-            buttonLabels.add(title);
-            buttonIds.add(match.getTopic().getKey());
-            sb.append("\n");
-            sb.append(title);
-            sb.append(" : ");
-            sb.append(summary);
-        }
-
-        respond(message, sb.toString(), buttonIds, buttonLabels);
+        List<Button> buttons = new ArrayList<>();
+        String response = getResponse(msg, buttons);
+        respond(message, response, buttons);
     }
 }

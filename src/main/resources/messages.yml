@@ -25,6 +25,8 @@ discord:
          🇺🇸 🇪🇸 🇫🇷 🇩🇪 🇮🇹 🇵🇹 🇯🇵 🇨🇳 🇰🇷
       
       You can add a **flag reaction** to any message on this server to have it translated for you.
+   not_found: "404: Sorry I have no idea what you're talking about!"
+   empty: "I'm sorry, can you speak up?"
 
 help:
    discord:
