@@ -42,3 +42,10 @@ help:
          `<title text="Miha's Birthday">`
          `<p>`I was born on 2021-09-13
          `<tags text="birth age miha born">`
+      elmakers: |-
+         `<title text="elMakers">`
+         `<p>`elMakers is an almost-real company that has existed since before Minecraft
+         `<p>`It was originally created as a communal crafting company
+         `<p>`And so the name was a sort-of inside joke, meaning "The Makers"
+         `<p>`But kind-of in Spanish ;)
+         `<p>`Now it pretty much just exists as an umbrella for all of NathanWolf's Minecraft creations.
