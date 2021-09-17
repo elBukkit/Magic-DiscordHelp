@@ -375,7 +375,9 @@ public class DiscordChatListener extends ListenerAdapter {
             buttons.add(button);
         }
 
-        return sb.toString();
+        String searchResults = sb.toString();
+        searchResults = translateMessage(searchResults);
+        return searchResults;
     }
 
     protected void respondToMessage(Message message) {
