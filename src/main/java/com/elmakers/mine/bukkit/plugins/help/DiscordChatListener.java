@@ -173,14 +173,14 @@ public class DiscordChatListener extends ListenerAdapter {
             }
 
             if (!member.getRoles().contains(role)) {
-                ReplyAction action = event.reply("You are already verified! Go to <#580101207364861954> if you need some human support.");
+                ReplyAction action = event.reply(controller.getMagic().getMessages().get("discord.already_verified"));
                 action.setEphemeral(true);
                 action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
                 return;
             }
 
             if (!member.getId().equals(memberId)) {
-                ReplyAction action = event.reply("That button was not meant for you. Please ask some questions, or click the button on this message.");
+                ReplyAction action = event.reply(controller.getMagic().getMessages().get("discord.verified_invalid"));
                 action.setEphemeral(true);
                 action.addActionRow(getVerifyButton(member));
                 action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
@@ -188,7 +188,7 @@ public class DiscordChatListener extends ListenerAdapter {
             }
 
             guild.removeRoleFromMember(member, role).queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to remove role from user " + member.getEffectiveName(), throwable));
-            ReplyAction action = event.reply("You are now verified and have access to the full server. Go to <#580101207364861954> if you need some human support.");
+            ReplyAction action = event.reply(controller.getMagic().getMessages().get("discord.verified"));
             action.setEphemeral(true);
             action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
 

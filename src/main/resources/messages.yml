@@ -28,6 +28,9 @@ discord:
    not_found: "404: Sorry I have no idea what you're talking about!"
    empty: "I'm sorry, can you speak up?"
    status: "around with /mhelp"
+   already_verified: You are already verified! Go to <#580101207364861954> if you need some human support.
+   verified: You are now verified and have full access to the server. Go to <#580101207364861954> if you need some human support!
+   verified_invalid: That button was not meant for you. Please ask some questions, or click the button on this message.
 
 help:
    discord:
