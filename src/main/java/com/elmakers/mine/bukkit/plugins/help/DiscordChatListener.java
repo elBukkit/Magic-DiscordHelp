@@ -129,9 +129,11 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     protected String getSimpleMessage(String message) {
-        // Do these only here to avoid escaping the bolding we do below
+        // Do this in two steps to avoid escaping **, kinda hacky yeah
+        message = ChatUtils.getSimpleMessage(message, false, " <b>", "<b>");
         message = message.replace("*", "\\*");
-        return ChatUtils.getSimpleMessage(message, false, " **", "**");
+        message = message.replace("<b>", "**");
+        return message;
     }
 
     protected String translateMessage(String message) {
