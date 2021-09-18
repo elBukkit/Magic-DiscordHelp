@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.ChatColor;
 
 import com.elmakers.mine.bukkit.ChatUtils;
@@ -231,24 +232,44 @@ public class DiscordChatListener extends ListenerAdapter {
         }
         if (id.startsWith("next:")) {
             String remainder = id.substring(5);
+            String[] pieces = StringUtils.split(remainder, ",");
             int next = 1;
-            if (!remainder.trim().isEmpty()) {
+            String nextString = pieces[0].trim();
+            if (!nextString.isEmpty()) {
                 try {
-                    next = Integer.parseInt(remainder);
+                    next = Integer.parseInt(nextString);
                 } catch (Exception ex) {
                     controller.getLogger().warning("Invalid next index: " + remainder);
                 }
             }
+            String originalMessageId = pieces.length > 1 ? pieces[1] : null;
             Message clickedMessage = event.getMessage();
-            Message originalMessage = getOriginal(clickedMessage);
-            List<Button> buttons = new ArrayList<>();
-            String msg = originalMessage.getContentDisplay();
-            String response = getResponse(msg, buttons, next);
-            ReplyAction action = event.reply(response);
-            addButtons(event.getMember(), action, buttons);
-            action.setEphemeral(true);
-            action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
+            Message originalMessage;
+            if (originalMessageId == null) {
+                originalMessage = getOriginal(clickedMessage);
+                showNextTopic(originalMessage, next, event);
+            } else {
+                final int nextIndex = next;
+                event.getChannel().retrieveMessageById(originalMessageId).queue(
+                    foundMessage -> showNextTopic(foundMessage, nextIndex, event),
+                    throwable -> controller.getLogger().log(Level.SEVERE, "Error retrieving original message from click " + originalMessageId
+                ));
+            }
         }
+    }
+
+    private void showNextTopic(Message originalMessage, int next, ButtonClickEvent event) {
+        if (originalMessage == null) {
+            controller.getLogger().warning("Could not find original message from button click");
+            return;
+        }
+        List<Button> buttons = new ArrayList<>();
+        String msg = originalMessage.getContentDisplay();
+        String response = getResponse(msg, buttons, originalMessage.getId(), next);
+        ReplyAction action = event.reply(response);
+        addButtons(event.getMember(), action, buttons);
+        action.setEphemeral(true);
+        action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + event.getButton().getId(), throwable));
     }
 
     private Message getOriginal(Message message) {
@@ -384,18 +405,18 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     protected String getResponse(String msg, List<Button> buttons) {
-        return getResponse(msg, buttons, false, 0);
+        return getResponse(msg, buttons, false, null, 0);
     }
 
-    protected String getResponse(String msg, List<Button> buttons, int startingAt) {
-        return getResponse(msg, buttons, false, startingAt);
+    protected String getResponse(String msg, List<Button> buttons, String originalMessageId, int startingAt) {
+        return getResponse(msg, buttons, false, originalMessageId, startingAt);
     }
 
-    protected String getTopResponse(String msg, List<Button> buttons) {
-        return getResponse(msg, buttons, true, 0);
+    protected String getTopResponse(String msg, List<Button> buttons, String originalMessageId) {
+        return getResponse(msg, buttons, true, originalMessageId, 0);
     }
 
-    private String getResponse(String msg, List<Button> buttons, boolean topOnly, int startingAt) {
+    private String getResponse(String msg, List<Button> buttons, boolean topOnly, String originalMessageId, int startingAt) {
         String[] pieces = ChatUtils.getWords(msg);
         if (pieces.length == 0) {
             return controller.getMagic().getMessages().get("discord.empty");
@@ -423,17 +444,17 @@ public class DiscordChatListener extends ListenerAdapter {
         if (matches.size() == 1) {
             return getTopicMessage(matches.get(0).getTopic(), buttons);
         }
-        if (topOnly) {
+        if (topOnly && originalMessageId != null) {
             HelpTopic topic = matches.get(0).getTopic();
             String message = getTopicMessage(topic, buttons);
-            Button showAllButton = Button.success("next:1", "Other Answers");
+            Button showAllButton = Button.success("next:1" + "," + originalMessageId, "Other Answers");
             buttons.add(0, showAllButton);
             return message;
         }
         StringBuilder sb = new StringBuilder();
         int count = 0;
         int maxButtons = MAX_BUTTONS_PER_ROW;
-        boolean showOther = startingAt > 0 && matches.size() > startingAt + MAX_BUTTONS_PER_ROW - 1;
+        boolean showOther = startingAt > 0 && matches.size() > startingAt + MAX_BUTTONS_PER_ROW - 1 && originalMessageId != null;
         if (showOther) maxButtons = MAX_BUTTONS_PER_ROW - 1;
         for (HelpTopicMatch match : matches) {
             if (count++ >= maxButtons) break;
@@ -453,7 +474,7 @@ public class DiscordChatListener extends ListenerAdapter {
 
         if (showOther) {
             int nextStart = startingAt + MAX_BUTTONS_PER_ROW - 1;
-            Button showAllButton = Button.success("next:" + nextStart, "Other Answers");
+            Button showAllButton = Button.success("next:" + nextStart + "," + originalMessageId, "Other Answers");
             buttons.add(0, showAllButton);
         }
 
@@ -477,7 +498,7 @@ public class DiscordChatListener extends ListenerAdapter {
         }
 
         List<Button> buttons = new ArrayList<>();
-        String response = getTopResponse(msg, buttons);
+        String response = getTopResponse(msg, buttons, message.getId());
         respond(message, response, buttons);
     }
 }
