@@ -111,8 +111,9 @@ public class DiscordChatListener extends ListenerAdapter {
     protected String getTopicMessage(HelpTopic topic, List<Button> buttons) {
         String topicText = topic.getText();
         topicText = getSimpleMessage(topicText);
-        topicText = translateMessage(topicText);
         getTopicButtons(topicText, buttons);
+        // Have to do this after getTopicButtons, the escaping of _ will mess with it
+        topicText = translateMessage(topicText);
         return topicText;
     }
 
@@ -125,10 +126,10 @@ public class DiscordChatListener extends ListenerAdapter {
     protected String translateMessage(String message) {
         // Oh yeah hacks sue me
         message = message.replace("➽", "");
+        message = message.replace("_", "\\_");
         if (message.length() >= 2000) {
             message = message.substring(0, 1996) + "...";
         }
-        message = message.replace("_", "\\_");
         return ChatColor.stripColor(message);
     }
 
