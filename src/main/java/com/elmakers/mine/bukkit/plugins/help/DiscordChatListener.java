@@ -42,7 +42,8 @@ import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.dv8tion.jda.api.requests.restaction.interactions.ReplyAction;
 
 public class DiscordChatListener extends ListenerAdapter {
-    private static final int MAX_BUTTONS = 5;
+    private static final int MAX_BUTTONS = 5 * 5;
+    private static final int MAX_BUTTONS_PER_ROW = 5;
     private static final Pattern MHELP_PATTERN = Pattern.compile("/mhelp ([a-z_A-Z\\.]*)");
     private final MagicDiscordHelpPlugin controller;
     private final Help help;
@@ -69,17 +70,27 @@ public class DiscordChatListener extends ListenerAdapter {
         return buttons;
     }
 
+    protected List<ActionRow> getActionRows(List<Button> buttons) {
+        List<ActionRow> rows = new ArrayList<>();
+        for (int i = 0; i < buttons.size(); i += MAX_BUTTONS_PER_ROW) {
+            int last = Math.min(buttons.size(), i + MAX_BUTTONS_PER_ROW);
+            ActionRow row = ActionRow.of(buttons.subList(i, last));
+            rows.add(row);
+        }
+        return rows;
+    }
+
     protected void addButtons(Member member, ReplyAction action, List<Button> buttons) {
         if (!buttons.isEmpty()) {
             buttons = processButtons(member, buttons);
-            action.addActionRow(buttons);
+            action.addActionRows(getActionRows(buttons));
         }
     }
 
     protected void addButtons(Member member, MessageAction action, List<Button> buttons) {
         if (!buttons.isEmpty()) {
             buttons = processButtons(member, buttons);
-            action.setActionRow(buttons);
+            action.setActionRows(getActionRows(buttons));
         }
     }
 
@@ -419,8 +430,11 @@ public class DiscordChatListener extends ListenerAdapter {
         }
         StringBuilder sb = new StringBuilder();
         int count = 0;
+        int maxButtons = MAX_BUTTONS_PER_ROW;
+        boolean showOther = startingAt > 0 && matches.size() > startingAt + MAX_BUTTONS_PER_ROW - 1;
+        if (showOther) maxButtons = MAX_BUTTONS_PER_ROW - 1;
         for (HelpTopicMatch match : matches) {
-            if (count++ >= MAX_BUTTONS) break;
+            if (count++ >= maxButtons) break;
             String title = match.getTopic().getTitle();
             String summary = match.getSummary(help, keywords, title, 100, "\uFEFF**", "**\uFEFF");
             sb.append("\n");
@@ -435,8 +449,8 @@ public class DiscordChatListener extends ListenerAdapter {
             buttons.add(button);
         }
 
-        if (startingAt > 0 && matches.size() > MAX_BUTTONS) {
-            int nextStart = startingAt + MAX_BUTTONS - 1;
+        if (showOther) {
+            int nextStart = startingAt + MAX_BUTTONS_PER_ROW - 1;
             Button showAllButton = Button.success("next:" + nextStart, "Other Answers");
             buttons.add(0, showAllButton);
         }
