@@ -21,6 +21,7 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageReaction;
+import net.dv8tion.jda.api.entities.MessageReference;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
@@ -60,7 +61,7 @@ public class DiscordChatListener extends ListenerAdapter {
             maxButtons--;
         }
         if (buttons.size() > maxButtons) {
-            buttons = buttons.subList(0, maxButtons - 1);
+            buttons = buttons.subList(0, maxButtons);
         }
         if (joinButton != null) {
             buttons.add(joinButton);
@@ -70,14 +71,14 @@ public class DiscordChatListener extends ListenerAdapter {
 
     protected void addButtons(Member member, ReplyAction action, List<Button> buttons) {
         if (!buttons.isEmpty()) {
-            processButtons(member, buttons);
+            buttons = processButtons(member, buttons);
             action.addActionRow(buttons);
         }
     }
 
     protected void addButtons(Member member, MessageAction action, List<Button> buttons) {
         if (!buttons.isEmpty()) {
-            processButtons(member, buttons);
+            buttons = processButtons(member, buttons);
             action.setActionRow(buttons);
         }
     }
@@ -224,16 +225,27 @@ public class DiscordChatListener extends ListenerAdapter {
                     controller.getLogger().warning("Invalid next index: " + remainder);
                 }
             }
-            // TODO: Find the referenced message
             Message clickedMessage = event.getMessage();
+            Message originalMessage = getOriginal(clickedMessage);
             List<Button> buttons = new ArrayList<>();
-            String msg = clickedMessage.getContentDisplay();
+            String msg = originalMessage.getContentDisplay();
             String response = getResponse(msg, buttons, next);
             ReplyAction action = event.reply(response);
             addButtons(event.getMember(), action, buttons);
             action.setEphemeral(true);
             action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
         }
+    }
+
+    private Message getOriginal(Message message) {
+        MessageReference replied = message.getMessageReference();
+        while (replied != null) {
+            Message repliedMessage = replied.getMessage();
+            if (repliedMessage == null) break;
+            message = repliedMessage;
+            replied = message.getMessageReference();
+        }
+        return message;
     }
 
     private Button getJoinButton(Member member) {
@@ -365,7 +377,6 @@ public class DiscordChatListener extends ListenerAdapter {
         return getResponse(msg, buttons, false, startingAt);
     }
 
-
     protected String getTopResponse(String msg, List<Button> buttons) {
         return getResponse(msg, buttons, true, 0);
     }
@@ -387,9 +398,10 @@ public class DiscordChatListener extends ListenerAdapter {
             keywords.add(arg.toLowerCase());
         }
         List<HelpTopicMatch> matches = help.findMatches(keywords);
-        while (!matches.isEmpty() && startingAt > 0) {
+        int removed = 0;
+        while (!matches.isEmpty() && removed < startingAt) {
             matches.remove(0);
-            startingAt--;
+            removed++;
         }
         if (matches.isEmpty()) {
             return controller.getMagic().getMessages().get("discord.not_found");
@@ -427,6 +439,12 @@ public class DiscordChatListener extends ListenerAdapter {
             sb.append(summary);
             Button button = Button.primary("help:" + match.getTopic().getKey(), title);
             buttons.add(button);
+        }
+
+        if (startingAt > 0 && matches.size() > MAX_BUTTONS) {
+            int nextStart = startingAt + MAX_BUTTONS - 1;
+            Button showAllButton = Button.success("next:" + nextStart, "Other Answers");
+            buttons.add(0, showAllButton);
         }
 
         String searchResults = sb.toString();
