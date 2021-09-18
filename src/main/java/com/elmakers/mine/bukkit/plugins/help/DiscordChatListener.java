@@ -417,13 +417,6 @@ public class DiscordChatListener extends ListenerAdapter {
             return message;
         }
         StringBuilder sb = new StringBuilder();
-        sb.append("I Found ");
-        sb.append(matches.size());
-        sb.append(" matches");
-        if (matches.size() > 5) {
-            sb.append(", here are the top 5");
-        }
-
         int count = 0;
         for (HelpTopicMatch match : matches) {
             if (count++ >= MAX_BUTTONS) break;
