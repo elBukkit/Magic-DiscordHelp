@@ -432,7 +432,7 @@ public class DiscordChatListener extends ListenerAdapter {
         for (String arg : pieces) {
             keywords.add(arg.toLowerCase());
         }
-        List<HelpTopicMatch> matches = help.findMatches(keywords);
+        List<HelpTopicMatch> matches = help.findMatches(keywords, MAX_BUTTONS_PER_ROW);
         int removed = 0;
         while (!matches.isEmpty() && removed < startingAt) {
             matches.remove(0);
