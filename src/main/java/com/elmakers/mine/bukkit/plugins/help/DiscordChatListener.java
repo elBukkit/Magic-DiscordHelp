@@ -417,7 +417,7 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     private String getResponse(String msg, List<Button> buttons, boolean topOnly, String originalMessageId, int startingAt) {
-        String[] pieces = ChatUtils.getWords(msg);
+        String[] pieces = ChatUtils.getWords(msg.toLowerCase());
         if (pieces.length == 0) {
             return controller.getMagic().getMessages().get("discord.empty");
         }
