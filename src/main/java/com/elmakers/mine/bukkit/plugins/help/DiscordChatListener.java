@@ -463,7 +463,7 @@ public class DiscordChatListener extends ListenerAdapter {
         for (HelpTopicMatch match : matches) {
             if (count++ >= maxButtons) break;
             String title = match.getTopic().getTitle();
-            String summary = match.getSummary(help, keywords, title, 100, "\uFEFF**", "**\uFEFF");
+            String summary = match.getSummary(100, "\uFEFF**", "**\uFEFF");
             sb.append("\n");
             if (controller.isDebug()) {
                 int relevance = (int)(100.0 * match.getRelevance());
