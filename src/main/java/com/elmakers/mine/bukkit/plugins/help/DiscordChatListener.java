@@ -335,13 +335,17 @@ public class DiscordChatListener extends ListenerAdapter {
             String welcomeMessage = controller.getMagic().getMessages().get("discord.welcome");
             welcomeMessage = welcomeMessage.replace("$member", member.getAsMention());
             MessageAction welcomeAction = helpChannel.sendMessage(welcomeMessage);
-            welcomeAction.setActionRow(getVerifyButton(member));
+            welcomeAction.setActionRow(getFirstVerifyButton(member));
             welcomeAction.queue(success -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send welcome message to " + member.getEffectiveName(), throwable));
         }
     }
 
+    protected Button getFirstVerifyButton(Member member) {
+        return Button.success("verify:" + member.getId(), controller.getMagic().getMessages().get("discord.verify_first_button"));
+    }
+
     protected Button getVerifyButton(Member member) {
-        return Button.success("verify:" + member.getId(), "I Need More Support, Please Let Me In");
+        return Button.success("verify:" + member.getId(), controller.getMagic().getMessages().get("discord.verify_button"));
     }
 
     protected void checkReactionAdd(Message message) {
