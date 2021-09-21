@@ -58,12 +58,14 @@ public class EvaluateTask implements Runnable {
     private final Plugin plugin;
     private final MagicController magic;
     private final Map<String, List<Evaluation>> results = new HashMap<>();
+    private final int repeat;
 
-    public EvaluateTask(CommandSender sender, Plugin plugin, MagicController magic, ConfigurationSection goals) {
+    public EvaluateTask(CommandSender sender, Plugin plugin, MagicController magic, ConfigurationSection goals, int repeat) {
         this.sender = sender;
         this.goals = goals;
         this.plugin = plugin;
         this.magic = magic;
+        this.repeat = repeat;
 
         // See above note about how this should be static and initialized with a builder
 
@@ -86,7 +88,15 @@ public class EvaluateTask implements Runnable {
     @Override
     public void run() {
         try {
-            runEvaluation(sender);
+            for (int i = 0; i <= repeat; i++) {
+                runEvaluation(sender);
+                if (i < repeat) {
+                    int remaining = repeat - i;
+                    sender.sendMessage(ChatColor.YELLOW + "Remaining runs: "+ ChatColor.GOLD + remaining);
+                } else {
+                    sender.sendMessage(ChatColor.GOLD + " Finished.");
+                }
+            }
         } catch (Exception ex) {
             sender.sendMessage(ChatColor.RED + "Something went wrong!");
             plugin.getLogger().log(Level.SEVERE, "Error loading evaluation goals", ex);
@@ -112,8 +122,8 @@ public class EvaluateTask implements Runnable {
         for (Map.Entry<String, List<Evaluation>> entry : results.entrySet()) {
             double value = entry.getValue().get(0).getValue();
             String property = entry.getKey();
-            sender.sendMessage(ChatColor.AQUA + "  " + property + ChatColor.GRAY + " = " + ChatColor.GREEN + value);
             Class<?> propertyClass = propertyClasses.get(property);
+            sender.sendMessage(ChatColor.DARK_AQUA + propertyClass.getSimpleName() + ChatColor.GRAY + "." + ChatColor.AQUA + "  " + property + ChatColor.GRAY + " = " + ChatColor.GREEN + value);
             Field valueField = propertyClass.getField(property);
             valueField.set(null, value);
         }
@@ -134,7 +144,7 @@ public class EvaluateTask implements Runnable {
         sender.sendMessage(valueRow);
     }
 
-    private Evaluation evaluate(CommandSender sender, ConfigurationSection goals, double value) {
+    private Evaluation evaluate(ConfigurationSection goals, double value) {
         Set<String> goalKeys = goals.getKeys(true);
         Help help = magic.getMessages().getHelp();
         help.resetStats();
@@ -165,7 +175,7 @@ public class EvaluateTask implements Runnable {
         Field valueField = propertyClass.getField(propertyName);
         for (double value = values[0]; value <= values[1]; value += values[2]) {
             valueField.set(null, value);
-            evaluations.add(evaluate(sender, goals, value));
+            evaluations.add(evaluate(goals, value));
         }
         valueField.set(null, values[3]);
         showEvaluation(sender, evaluations);

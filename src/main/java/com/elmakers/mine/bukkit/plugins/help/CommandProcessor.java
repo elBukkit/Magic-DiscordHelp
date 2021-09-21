@@ -28,9 +28,9 @@ public class CommandProcessor implements TabExecutor {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
+    public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
         try {
-            onEvaluate(commandSender);
+            onEvaluate(commandSender, args);
         } catch (Exception ex) {
             commandSender.sendMessage(ChatColor.RED + "Something went wrong!");
             plugin.getLogger().log(Level.SEVERE, "Error loading evaluation goals", ex);
@@ -44,11 +44,22 @@ public class CommandProcessor implements TabExecutor {
         return new ArrayList<>();
     }
 
-    private void onEvaluate(CommandSender sender)
+    private void onEvaluate(CommandSender sender, String[] args)
             throws IOException, InvalidConfigurationException {
+
+        int repeat = 1;
+        if (args.length > 0) {
+            try {
+                repeat = Integer.parseInt(args[0]);
+            } catch (Exception ex) {
+                sender.sendMessage(ChatColor.RED + "Invalid count: " + ChatColor.WHITE + args[0]);
+                return;
+            }
+        }
+
         YamlConfiguration goals = new YamlConfiguration();
         goals.load(new InputStreamReader(plugin.getResource("goals.yml")));
-        EvaluateTask evaluateTask = new EvaluateTask(sender, plugin, magic, goals);
+        EvaluateTask evaluateTask = new EvaluateTask(sender, plugin, magic, goals, repeat);
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, evaluateTask);
     }
 }
