@@ -50,4 +50,17 @@ public class Evaluation extends EvaluationScore implements Comparable<Evaluation
     public double getValue() {
         return value;
     }
+
+    public void getMissingTopics(Map<String, Integer> missing) {
+        for (Map.Entry<String, EvaluationScore> entry : goalEvaluations.entrySet()) {
+            EvaluationScore goalScore = entry.getValue();
+            if (goalScore.getMatches() == 0) {
+                String topic = entry.getKey();
+                Integer count = missing.get(topic);
+                if (count == null) count = 1;
+                else count++;
+                missing.put(topic, count);
+            }
+        }
+    }
 }
