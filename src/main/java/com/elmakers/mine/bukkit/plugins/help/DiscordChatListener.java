@@ -1,6 +1,7 @@
 package com.elmakers.mine.bukkit.plugins.help;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -432,10 +433,7 @@ public class DiscordChatListener extends ListenerAdapter {
                 return getTopicMessage(topic, buttons);
             }
         }
-        List<String> keywords = new ArrayList<>();
-        for (String arg : pieces) {
-            keywords.add(arg.toLowerCase());
-        }
+        List<String> keywords = Arrays.asList(pieces);
         List<HelpTopicMatch> matches = help.findMatches(keywords, MAX_BUTTONS_PER_ROW);
         int removed = 0;
         while (!matches.isEmpty() && removed < startingAt) {

@@ -61,6 +61,10 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
         } else {
             getServer().getScheduler().runTaskAsynchronously(this, new JDAConnector(this));
         }
+
+        CommandProcessor processor = new CommandProcessor(this, magic);
+        getCommand("evaluate").setTabCompleter(processor);
+        getCommand("evaluate").setExecutor(processor);
     }
 
     public void onDisable() {

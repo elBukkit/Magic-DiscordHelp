@@ -6,3 +6,14 @@ author: NathanWolf
 description: A plugin to expose /mhelp to Discord
 depend:
   - Magic
+
+commands:
+  evaluate:
+    description: Run a parameterized weight evaluation
+    permission: magic.commands.evaluate
+
+permissions:
+  magic.comamnds.evaluate:
+    description: Run a weight evaluation
+    type: boolean
+    default: op

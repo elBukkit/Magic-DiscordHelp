@@ -1,0 +1,93 @@
+examples.survival.wand_crafting:
+  - craft wand
+  - how do i craft a wand?
+  - wand crafting
+  - craftable wands
+  - how to craft a wand
+  - how can players craft wands
+  - how can I make a wand
+  - how do players get wands
+  - how do I get a wand
+
+examples.survival.spellpoints:
+  - how do I get sp
+  - how do i get spell points
+  - give sp
+  - give spell points
+  - how to give a player spell points
+  - how do i give a player spell points
+  - how do players get sp
+  - how do players earn sp
+  - how do i earn spell points
+
+examples.survival.dragons:
+  - dragons are invisible
+  - how to spawn dragons
+  - dragons not working
+  - dragons don't work
+
+examples.survival.wandgui:
+  - how do I turn off the action bar
+  - how do i use the boss bar
+  - disable action bar
+  - disable second hotbar
+  - turn off second hotbar
+
+examples.survival.broomstick:
+  - broomsticks are not working
+  - broomsticks don't work
+  - broomsticks broken
+  - brooms broken
+  - broom not working
+
+nottrained:
+  - you are not trained
+  - you are not trained to use this
+  - my wands are saying i am not trained to use them
+  - not trained
+
+missing_spells:
+  - I can't find my spells
+  - how do i find my spells
+  - i am missing some spells
+  - i lost some spells
+
+shops:
+  - how do i customize shop prices
+  - change shop prices
+  - change price in shops
+  - change item prices
+  - customize shops
+
+mana_customization:
+  - how do i get more mana
+  - how do players get more mana
+  - increase my mana
+  - increase my max mana
+  - give more mana
+  - add mana to wand
+
+localization:
+  - how do i change the language
+  - is the plugin in Spanish
+  - en Español?
+  - how do i tranlsate
+  - change plugin messages
+
+no_permission:
+  - I can't cast my spells
+  - My spells say I can't cast them
+  - I don't have permission to cast spells
+  - My spells say I can't do that right now
+
+placeholders:
+  - How do I show path in chat prefix
+  - Add chat prefixes
+  - Get my path as a placeholder
+
+resourcepack:
+  - How do i disable the resource pack
+  - disable the texture pack
+  - get the texture pack
+  - get a link to the resource pack
+  - turn off the texture pack
