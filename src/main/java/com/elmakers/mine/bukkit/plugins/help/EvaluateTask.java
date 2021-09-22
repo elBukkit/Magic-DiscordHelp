@@ -67,6 +67,10 @@ public class EvaluateTask implements Runnable {
     @Override
     public void run() {
         try {
+            if (repeat <= 1) {
+                runSingleEvaluation(sender);
+                return;
+            }
             Map<String, Map<Double, Integer>> valueCounts = new HashMap<>();
             Map<String, Integer> bestCounts = new HashMap<>();
             Map<String, Double> bestValues = new HashMap<>();
@@ -111,10 +115,29 @@ public class EvaluateTask implements Runnable {
                     sender.sendMessage(evaluationProperty.getDescription() + ChatColor.GRAY + " = " + ChatColor.GREEN + value);
                 }
             }
-
         } catch (Exception ex) {
             sender.sendMessage(ChatColor.RED + "Something went wrong!");
             plugin.getLogger().log(Level.SEVERE, "Error loading evaluation goals", ex);
+        }
+    }
+
+    private void runSingleEvaluation(CommandSender sender) throws NoSuchFieldException, IllegalAccessException {
+        sender.sendMessage("Checking current default values:");
+        for (EvaluationProperty property : properties.values()) {
+            sender.sendMessage(ChatColor.DARK_AQUA + "Checking " + ChatColor.AQUA + property.getDescription()
+                    + ChatColor.DARK_AQUA + " = " + property.getDefaultValue());
+            property.restoreDefaultValue();
+        }
+        Evaluation evaluation = evaluate(goals, 0);
+        sender.sendMessage("Score: " + ChatColor.GREEN + evaluation.getRatio());
+        Map<String, Integer> missing = new HashMap<>();
+        evaluation.getMissingTopics(missing);
+        if (!missing.isEmpty()) {
+            List<String> messages = new ArrayList<>();
+            for (Map.Entry<String, Integer> entry : missing.entrySet()) {
+                messages.add(entry.getKey());
+            }
+            sender.sendMessage("Missing: " + StringUtils.join(messages, " | "));
         }
     }
 
@@ -136,8 +159,12 @@ public class EvaluateTask implements Runnable {
         String propertyName = property.getProperty();
         List<Double> values = new ArrayList<>();
         for (double[] searchSpace : SEARCH_SPACES) {
-            for (double value = searchSpace[0]; value <= searchSpace[1]; value += searchSpace[2]) {
+            int i = 0;
+            double value = searchSpace[0] + searchSpace[2] * i;
+            while (value <= searchSpace[1]) {
                 values.add(value);
+                i++;
+                value = searchSpace[0] + searchSpace[2] * i;
             }
         }
         sender.sendMessage(ChatColor.DARK_AQUA + "Searching " + ChatColor.AQUA + propertyName

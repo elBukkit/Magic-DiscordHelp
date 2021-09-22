@@ -36,10 +36,14 @@ public class EvaluationProperty {
     }
 
     public String getDescription() {
-        return ChatColor.DARK_AQUA + propertyClass.getSimpleName() + ChatColor.GRAY + "." + ChatColor.AQUA + "  " + property;
+        return ChatColor.DARK_AQUA + propertyClass.getSimpleName() + ChatColor.GRAY + "." + ChatColor.AQUA + property;
     }
 
     public String getProperty() {
         return property;
+    }
+
+    public double getDefaultValue() {
+        return defaultValue;
     }
 }
