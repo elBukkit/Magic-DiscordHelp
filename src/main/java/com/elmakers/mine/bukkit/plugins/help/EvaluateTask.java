@@ -1,6 +1,5 @@
 package com.elmakers.mine.bukkit.plugins.help;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,31 +25,13 @@ import com.elmakers.mine.bukkit.utility.help.HelpTopicWord;
 public class EvaluateTask implements Runnable {
     private static final String NUMERIC_FORMAT = "%.1f";
 
-    // min, max, step, default
-
-    // HelpTopicKeywordMatch
-    public static final double[] COUNT_FACTOR = {0.2, 2.0, 0.2, HelpTopicKeywordMatch.COUNT_FACTOR};
-    public static final double[] WORD_FACTOR = {0.2, 2.0, 0.2, HelpTopicKeywordMatch.WORD_FACTOR};
-    public static final double[] SIMILARITY_FACTOR = {0.2, 5.0, 0.2, HelpTopicKeywordMatch.SIMILARITY_FACTOR};
-    public static final double[] COUNT_WEIGHT = {0.5, 5, 0.5, HelpTopicKeywordMatch.COUNT_WEIGHT};
-    public static final double[] WORD_WEIGHT = {0.5, 5, 0.5, HelpTopicKeywordMatch.COUNT_WEIGHT};
-
-    // HelpTopicMatch
-    public static final double[] CONTENT_FACTOR = {0.2, 2.0, 0.2, HelpTopicMatch.CONTENT_FACTOR};
-    public static final double[] TAG_FACTOR = {0.2, 2.0, 0.2, HelpTopicMatch.TAG_FACTOR};
-    public static final double[] TITLE_FACTOR = {0.2, 2.0, 0.2, HelpTopicMatch.TITLE_FACTOR};
-
-    // HelpTopicWord
-    private static final double[] RARITY_FACTOR = {0.2, 2.0, 0.2, HelpTopicWord.RARITY_FACTOR};
-    private static final double[] TOPIC_RARITY_FACTOR = {0.2, 2.0, 0.2, HelpTopicWord.TOPIC_RARITY_FACTOR};
-    private static final double[] LENGTH_FACTOR = {0.2, 2.0, 0.2, HelpTopicWord.LENGTH_FACTOR};
-
-    private static final double[] RARITY_WEIGHT = {0.2, 2.0, 0.2, HelpTopicWord.RARITY_WEIGHT};
-    private static final double[] TOPIC_RARITY_WEIGHT = {0.2, 2.0, 0.2, HelpTopicWord.TOPIC_RARITY_WEIGHT};
-    private static final double[] LENGTH_WEIGHT = {0.2, 2.0, 0.2, HelpTopicWord.LENGTH_WEIGHT};
-
-    // A Guava immutable map would work better here but whatever this is not production code
-    private final Map<String, Class<?>> propertyClasses = new HashMap<>();
+    // min, max, step
+    public static final double[][] SEARCH_SPACES = {
+        {0.1, 1.0, 0.1},
+        {1.5, 5.0, 0.5},
+        {5.1, 6.0, 0.1}
+    };
+    private final Map<String, EvaluationProperty> properties = new HashMap<>();
 
     // Instance
     private final CommandSender sender;
@@ -67,36 +48,70 @@ public class EvaluateTask implements Runnable {
         this.magic = magic;
         this.repeat = repeat;
 
-        // See above note about how this should be static and initialized with a builder
-
-        propertyClasses.put("COUNT_FACTOR", HelpTopicKeywordMatch.class);
-        propertyClasses.put("WORD_FACTOR", HelpTopicKeywordMatch.class);
-        propertyClasses.put("SIMILARITY_FACTOR", HelpTopicKeywordMatch.class);
-        propertyClasses.put("COUNT_WEIGHT", HelpTopicKeywordMatch.class);
-        propertyClasses.put("WORD_WEIGHT", HelpTopicKeywordMatch.class);
-        propertyClasses.put("CONTENT_FACTOR", HelpTopicMatch.class);
-        propertyClasses.put("TAG_FACTOR", HelpTopicMatch.class);
-        propertyClasses.put("TITLE_FACTOR", HelpTopicMatch.class);
-        propertyClasses.put("RARITY_FACTOR", HelpTopicWord.class);
-        propertyClasses.put("TOPIC_RARITY_FACTOR", HelpTopicWord.class);
-        propertyClasses.put("LENGTH_FACTOR", HelpTopicWord.class);
-        propertyClasses.put("RARITY_WEIGHT", HelpTopicWord.class);
-        propertyClasses.put("TOPIC_RARITY_WEIGHT", HelpTopicWord.class);
-        propertyClasses.put("LENGTH_WEIGHT", HelpTopicWord.class);
+        EvaluationProperty.register(properties, "COUNT_FACTOR", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_FACTOR);
+        EvaluationProperty.register(properties, "WORD_FACTOR", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.WORD_FACTOR);
+        EvaluationProperty.register(properties, "SIMILARITY_FACTOR", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.SIMILARITY_FACTOR);
+        EvaluationProperty.register(properties, "COUNT_WEIGHT", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_WEIGHT);
+        EvaluationProperty.register(properties, "WORD_WEIGHT", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_WEIGHT);
+        EvaluationProperty.register(properties, "CONTENT_FACTOR", HelpTopicMatch.class, HelpTopicMatch.CONTENT_FACTOR);
+        EvaluationProperty.register(properties, "TAG_FACTOR", HelpTopicMatch.class, HelpTopicMatch.TAG_FACTOR);
+        EvaluationProperty.register(properties, "TITLE_FACTOR", HelpTopicMatch.class, HelpTopicMatch.TITLE_FACTOR);
+        EvaluationProperty.register(properties, "RARITY_FACTOR", HelpTopicWord.class, HelpTopicWord.RARITY_FACTOR);
+        EvaluationProperty.register(properties, "TOPIC_RARITY_FACTOR", HelpTopicWord.class, HelpTopicWord.TOPIC_RARITY_FACTOR);
+        EvaluationProperty.register(properties, "LENGTH_FACTOR", HelpTopicWord.class, HelpTopicWord.LENGTH_FACTOR);
+        EvaluationProperty.register(properties, "RARITY_WEIGHT", HelpTopicWord.class, HelpTopicWord.RARITY_WEIGHT);
+        EvaluationProperty.register(properties, "TOPIC_RARITY_WEIGHT", HelpTopicWord.class, HelpTopicWord.TOPIC_RARITY_WEIGHT);
+        EvaluationProperty.register(properties, "LENGTH_WEIGHT", HelpTopicWord.class, HelpTopicWord.LENGTH_WEIGHT);
     }
 
     @Override
     public void run() {
         try {
+            Map<String, Map<Double, Integer>> valueCounts = new HashMap<>();
+            Map<String, Integer> bestCounts = new HashMap<>();
+            Map<String, Double> bestValues = new HashMap<>();
             for (int i = 0; i <= repeat; i++) {
                 runEvaluation(sender);
                 if (i < repeat) {
                     int remaining = repeat - i;
                     sender.sendMessage(ChatColor.YELLOW + "Remaining runs: "+ ChatColor.GOLD + remaining);
-                } else {
-                    sender.sendMessage(ChatColor.GOLD + " Finished.");
+                }
+
+                for (Map.Entry<String, List<Evaluation>> entry : results.entrySet()) {
+                    double value = entry.getValue().get(0).getValue();
+                    String property = entry.getKey();
+                    Map<Double, Integer> valueCountMap = valueCounts.get(property);
+                    if (valueCountMap == null) {
+                        valueCountMap = new HashMap<>();
+                    }
+                    Integer valueCount = valueCountMap.get(value);
+                    if (valueCount == null) {
+                        valueCount = 1;
+                    } else {
+                        valueCount++;
+                    }
+                    valueCountMap.put(value, valueCount);
+                    Integer bestCount = bestCounts.get(property);
+                    if (bestCount == null || valueCount > bestCount) {
+                        bestCounts.put(property, valueCount);
+                        bestValues.put(property, value);
+                    }
+                }
+
+                results.clear();
+            }
+            if (repeat <= 1) {
+                sender.sendMessage(ChatColor.GOLD + " Finished.");
+            } else {
+                sender.sendMessage(ChatColor.GOLD + " Finished, applying most common selections: ");
+                for (Map.Entry<String, Double> entry : bestValues.entrySet()) {
+                    double value = entry.getValue();
+                    EvaluationProperty evaluationProperty = properties.get(entry.getKey());
+                    evaluationProperty.setDefaultValue(value);
+                    sender.sendMessage(evaluationProperty.getDescription() + ChatColor.GRAY + " = " + ChatColor.GREEN + value);
                 }
             }
+
         } catch (Exception ex) {
             sender.sendMessage(ChatColor.RED + "Something went wrong!");
             plugin.getLogger().log(Level.SEVERE, "Error loading evaluation goals", ex);
@@ -104,39 +119,62 @@ public class EvaluateTask implements Runnable {
     }
 
     private void runEvaluation(CommandSender sender) throws NoSuchFieldException, IllegalAccessException {
-        runEvaluation(sender, goals, COUNT_FACTOR, "COUNT_FACTOR");
-        runEvaluation(sender, goals, WORD_FACTOR, "WORD_FACTOR");
-        runEvaluation(sender, goals, SIMILARITY_FACTOR, "SIMILARITY_FACTOR");
-        runEvaluation(sender, goals, COUNT_WEIGHT, "COUNT_WEIGHT");
-        runEvaluation(sender, goals, WORD_WEIGHT, "WORD_WEIGHT");
-        runEvaluation(sender, goals, CONTENT_FACTOR, "CONTENT_FACTOR");
-        runEvaluation(sender, goals, TAG_FACTOR, "TAG_FACTOR");
-        runEvaluation(sender, goals, TITLE_FACTOR, "TITLE_FACTOR");
-        runEvaluation(sender, goals, RARITY_FACTOR, "RARITY_FACTOR");
-        runEvaluation(sender, goals, TOPIC_RARITY_FACTOR, "TOPIC_RARITY_FACTOR");
-        runEvaluation(sender, goals, LENGTH_FACTOR, "LENGTH_FACTOR");
-        runEvaluation(sender, goals, RARITY_WEIGHT, "RARITY_WEIGHT");
-        runEvaluation(sender, goals, TOPIC_RARITY_WEIGHT, "TOPIC_RARITY_WEIGHT");
-        runEvaluation(sender, goals, LENGTH_WEIGHT, "LENGTH_WEIGHT");
+        for (EvaluationProperty property : properties.values()) {
+            runEvaluation(sender, goals, property);
+        }
         sender.sendMessage("Applying recommended changes: ");
         for (Map.Entry<String, List<Evaluation>> entry : results.entrySet()) {
             double value = entry.getValue().get(0).getValue();
-            String property = entry.getKey();
-            Class<?> propertyClass = propertyClasses.get(property);
-            sender.sendMessage(ChatColor.DARK_AQUA + propertyClass.getSimpleName() + ChatColor.GRAY + "." + ChatColor.AQUA + "  " + property + ChatColor.GRAY + " = " + ChatColor.GREEN + value);
-            Field valueField = propertyClass.getField(property);
-            valueField.set(null, value);
+            EvaluationProperty property = properties.get(entry.getKey());
+            sender.sendMessage(property.getDescription() + ChatColor.GRAY + " = " + ChatColor.GREEN + value);
+            property.setDefaultValue(value);
         }
+    }
+
+    private void runEvaluation(CommandSender sender, ConfigurationSection goals, EvaluationProperty property)
+            throws NoSuchFieldException, IllegalAccessException {
+        String propertyName = property.getProperty();
+        List<Double> values = new ArrayList<>();
+        for (double[] searchSpace : SEARCH_SPACES) {
+            for (double value = searchSpace[0]; value <= searchSpace[1]; value += searchSpace[2]) {
+                values.add(value);
+            }
+        }
+        sender.sendMessage(ChatColor.DARK_AQUA + "Searching " + ChatColor.AQUA + propertyName
+            + ChatColor.DARK_AQUA + " from " + ChatColor.GREEN + values.get(0)
+            + ChatColor.DARK_AQUA + " to " + ChatColor.GREEN + values.get(values.size() - 1));
+        List<Evaluation> evaluations = new ArrayList<>();
+        for (double value : values) {
+            property.set(value);
+            evaluations.add(evaluate(goals, value));
+        }
+        property.restoreDefaultValue();
+        showEvaluation(sender, evaluations);
+        sender.sendMessage("");
+        Map<String, Integer> missing = new HashMap<>();
+        for (Evaluation evaluation : evaluations) {
+            evaluation.getMissingTopics(missing);
+        }
+        if (!missing.isEmpty()) {
+            List<String> messages = new ArrayList<>();
+            for (Map.Entry<String, Integer> entry : missing.entrySet()) {
+                messages.add(entry.getKey() + ": " + ChatUtils.printPercentage((double)entry.getValue() / evaluations.size()));
+            }
+            sender.sendMessage("Missing: " + StringUtils.join(messages, " | "));
+        }
+        results.put(propertyName, evaluations);
     }
 
     private void showEvaluation(CommandSender sender, List<Evaluation> evaluations) {
         Collections.sort(evaluations);
-        String headerRow = "" + ChatColor.AQUA;
-        String valueRow = "" + ChatColor.GREEN;
+        String headerRow = "";
+        String valueRow = "";
         final int NUMERIC_WIDTH = 6;
         for (Evaluation evaluation : evaluations) {
-            headerRow += ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, evaluation.getValue()), NUMERIC_WIDTH);
-            valueRow += ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, evaluation.getRatio()), NUMERIC_WIDTH);
+            ChatColor color = evaluation.hasMissingTopics() ? ChatColor.RED : ChatColor.AQUA;
+            headerRow += color + ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, evaluation.getValue()), NUMERIC_WIDTH);
+            color = evaluation.hasMissingTopics() ? ChatColor.RED : ChatColor.GREEN;
+            valueRow += color + ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, evaluation.getRatio()), NUMERIC_WIDTH);
         }
         sender.sendMessage(headerRow);
         int totalWidth = NUMERIC_WIDTH * evaluations.size();
@@ -163,34 +201,5 @@ public class EvaluateTask implements Runnable {
             }
         }
         return evaluation;
-    }
-
-    private void runEvaluation(CommandSender sender, ConfigurationSection goals, double[] values, String propertyName)
-            throws NoSuchFieldException, IllegalAccessException {
-        sender.sendMessage(ChatColor.DARK_AQUA + "Searching " + ChatColor.AQUA + propertyName
-            + ChatColor.DARK_AQUA + " from " + ChatColor.GREEN + values[0]
-            + ChatColor.DARK_AQUA + " to " + ChatColor.GREEN + values[1]);
-        List<Evaluation> evaluations = new ArrayList<>();
-        Class<?> propertyClass = propertyClasses.get(propertyName);
-        Field valueField = propertyClass.getField(propertyName);
-        for (double value = values[0]; value <= values[1]; value += values[2]) {
-            valueField.set(null, value);
-            evaluations.add(evaluate(goals, value));
-        }
-        valueField.set(null, values[3]);
-        showEvaluation(sender, evaluations);
-        sender.sendMessage("");
-        Map<String, Integer> missing = new HashMap<>();
-        for (Evaluation evaluation : evaluations) {
-            evaluation.getMissingTopics(missing);
-        }
-        if (!missing.isEmpty()) {
-            List<String> messages = new ArrayList<>();
-            for (Map.Entry<String, Integer> entry : missing.entrySet()) {
-                messages.add(entry.getKey() + ": " + ChatUtils.printPercentage((double)entry.getValue() / evaluations.size()));
-            }
-            sender.sendMessage("Missing: " + StringUtils.join(messages, " | "));
-        }
-        results.put(propertyName, evaluations);
     }
 }

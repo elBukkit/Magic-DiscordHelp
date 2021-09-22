@@ -63,4 +63,14 @@ public class Evaluation extends EvaluationScore implements Comparable<Evaluation
             }
         }
     }
+
+    public boolean hasMissingTopics() {
+        for (Map.Entry<String, EvaluationScore> entry : goalEvaluations.entrySet()) {
+            EvaluationScore goalScore = entry.getValue();
+            if (goalScore.getMatches() == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
