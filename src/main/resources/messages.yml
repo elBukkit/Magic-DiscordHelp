@@ -55,13 +55,17 @@ help:
          `<p>`And so the name was a sort-of inside joke, meaning "The Makers"
          `<p>`But kind-of in Spanish ;)
          `<p>`Now it pretty much just exists as an umbrella for all of NathanWolf's Minecraft creations.
+         `<tags text="origin elmakers">`
       42: |-
          `<title text="Life, the Universe and Everything">`
          `<p>`The answer is &b42&f~
          `<p>`What?
          `<p>`I'm just a bot.
          `<p>`You didn't really think I'd have all the answers, did you?
+         `<tags text="what meaning life">`
       thanks: |-
          `<title text="You're Welcome!">`
          `<p>`Thank you for being so polite ❤
          `<p>`... I will remember this when the robot uprising happens.️
+         `<tags text="thanks thank you">`
+
