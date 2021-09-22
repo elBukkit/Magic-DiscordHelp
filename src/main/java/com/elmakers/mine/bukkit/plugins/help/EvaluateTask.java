@@ -56,6 +56,9 @@ public class EvaluateTask implements Runnable {
         EvaluationProperty.register(properties, "CONTENT_FACTOR", HelpTopicMatch.class, HelpTopicMatch.CONTENT_FACTOR);
         EvaluationProperty.register(properties, "TAG_FACTOR", HelpTopicMatch.class, HelpTopicMatch.TAG_FACTOR);
         EvaluationProperty.register(properties, "TITLE_FACTOR", HelpTopicMatch.class, HelpTopicMatch.TITLE_FACTOR);
+        EvaluationProperty.register(properties, "CONTENT_WEIGHT", HelpTopicMatch.class, HelpTopicMatch.CONTENT_WEIGHT);
+        EvaluationProperty.register(properties, "TAG_WEIGHT", HelpTopicMatch.class, HelpTopicMatch.TAG_WEIGHT);
+        EvaluationProperty.register(properties, "TITLE_WEIGHT", HelpTopicMatch.class, HelpTopicMatch.TITLE_WEIGHT);
         EvaluationProperty.register(properties, "RARITY_FACTOR", HelpTopicWord.class, HelpTopicWord.RARITY_FACTOR);
         EvaluationProperty.register(properties, "TOPIC_RARITY_FACTOR", HelpTopicWord.class, HelpTopicWord.TOPIC_RARITY_FACTOR);
         EvaluationProperty.register(properties, "LENGTH_FACTOR", HelpTopicWord.class, HelpTopicWord.LENGTH_FACTOR);
