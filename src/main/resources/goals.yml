@@ -32,6 +32,7 @@ wandgui:
   - disable action bar
   - disable second hotbar
   - turn off second hotbar
+  - second hotbar
 
 examples.survival.broomstick:
   - broomsticks are not working
@@ -99,3 +100,9 @@ trails:
   - Turn off crow
   - Add tail effects
   - Remove demon effects
+
+reference.actions.check_inventory:
+  - CheckInventory
+  - check inventory action
+  - inventory reference action
+  - check inventory spell action
