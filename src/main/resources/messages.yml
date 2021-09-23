@@ -76,8 +76,8 @@ help:
          `<p>`I hope you are having a great day though!
          `<tags text="how are you doing feeling good day">`
       donating: |-
-         `<title text="Donating to the Plugin">`
-         `<p>`Do you want to support Magic plugin development?
+         `<title text="Donate to the Plugin">`
+         `<p>`Do you want to support Magic plugin development with a donation?
          `<p>`Well, thank you!
          `<p>`NathanWolf does this for the love of it, and doesn't really need money.
          `<p>`So if you would like, please choose your favorite charity and donate there instead!
