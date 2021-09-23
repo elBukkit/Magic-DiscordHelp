@@ -116,3 +116,9 @@ discord.miha:
   - Hello!
   - Hi
   - Hello Miha
+
+discord.donate:
+  - How do i donate to the plugin?
+  - I want to support plugin development
+  - Can I support the plugin
+  - I want to make a donation
