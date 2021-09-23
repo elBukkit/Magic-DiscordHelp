@@ -56,7 +56,11 @@ public class Evaluation extends EvaluationScore implements Comparable<Evaluation
     }
 
     public double getRatio() {
-        return matches / goals;
+        return (double)matches / goals;
+    }
+
+    public double getScore() {
+        return score;
     }
 
     public double getValue() {

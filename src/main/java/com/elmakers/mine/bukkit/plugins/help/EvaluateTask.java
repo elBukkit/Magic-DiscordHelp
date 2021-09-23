@@ -26,6 +26,7 @@ import com.elmakers.mine.bukkit.utility.help.SearchFactors;
 
 public class EvaluateTask implements Runnable {
     private static final String NUMERIC_FORMAT = "%.1f";
+    private static final int NUMERIC_WIDTH = 5;
 
     // min, max, step
     public static final double[][] WEIGHT_SEARCH_SPACES = {
@@ -159,7 +160,9 @@ public class EvaluateTask implements Runnable {
             property.restoreDefaultValue();
         }
         Evaluation evaluation = evaluate(goals, 0);
-        sender.sendMessage("Score: " + ChatColor.GREEN + ChatUtils.printPercentage(evaluation.getRatio()));
+        sender.sendMessage("Score: " + ChatColor.GREEN + String.format(NUMERIC_FORMAT, evaluation.getRatio())
+            + ChatColor.GRAY + " | "
+            + ChatColor.AQUA + String.format(NUMERIC_FORMAT, evaluation.getScore()));
         Set<String> missing = evaluation.getMissingTopics();
         if (!missing.isEmpty()) {
             sender.sendMessage("Missing: " + StringUtils.join(missing, " | "));
@@ -223,18 +226,20 @@ public class EvaluateTask implements Runnable {
     private void showEvaluation(CommandSender sender, List<Evaluation> evaluations) {
         Collections.sort(evaluations);
         String headerRow = "";
-        String valueRow = "";
-        final int NUMERIC_WIDTH = 6;
+        String ratioRow = "";
+        String scoreRow = "";
         for (Evaluation evaluation : evaluations) {
             ChatColor color = evaluation.hasMissingTopics() ? ChatColor.RED : ChatColor.AQUA;
             headerRow += color + ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, evaluation.getValue()), NUMERIC_WIDTH);
             color = evaluation.hasMissingTopics() ? ChatColor.RED : ChatColor.GREEN;
-            valueRow += color + ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, ChatUtils.printRatio(evaluation.getRatio())), NUMERIC_WIDTH);
+            ratioRow += color + ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, evaluation.getRatio()), NUMERIC_WIDTH);
+            scoreRow += color + ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, evaluation.getScore()), NUMERIC_WIDTH);
         }
         sender.sendMessage(headerRow);
         int totalWidth = NUMERIC_WIDTH * evaluations.size();
         sender.sendMessage(StringUtils.repeat("_", totalWidth));
-        sender.sendMessage(valueRow);
+        sender.sendMessage(ratioRow);
+        sender.sendMessage(scoreRow);
     }
 
     private Evaluation evaluate(ConfigurationSection goals, double value) throws NoSuchFieldException, IllegalAccessException {
