@@ -49,10 +49,15 @@ public class Evaluation extends EvaluationScore implements Comparable<Evaluation
         if (!o.hasMissingTopics() && hasMissingTopics()) {
             return 1;
         }
-        if (o.matches == this.matches) {
-            return o.score > score ? 1 : (o.score < score ? -1 : 0);
-        }
-        return o.matches > matches ? 1 : -1;
+        double ranking = getRanking();
+        double oranking = o.getRanking();
+        if (ranking == oranking) return 0;
+
+        return oranking > ranking ? 1 : -1;
+    }
+
+    private double getRanking() {
+        return getRatio() * getScore();
     }
 
     public double getRatio() {
