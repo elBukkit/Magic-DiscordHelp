@@ -9,6 +9,16 @@ public class EvaluationScore {
     protected int matches;
     protected double score;
 
+    public EvaluationScore() {
+
+    }
+
+    public EvaluationScore(EvaluationScore copy) {
+        goals = copy.goals;
+        matches = copy.matches;
+        score = copy.score;
+    }
+
     public void addResults(List<HelpTopicMatch> matches, String goal) {
         double score = getScore(matches, goal);
         addScore(score);

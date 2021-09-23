@@ -26,6 +26,11 @@ public class EvaluationProperty {
         valueField.set(null, newValue);
     }
 
+    public double get() throws NoSuchFieldException, IllegalAccessException {
+        Field valueField = propertyClass.getField(property);
+        return (double)valueField.get(null);
+    }
+
     public void restoreDefaultValue() throws NoSuchFieldException, IllegalAccessException {
         set(defaultValue);
     }

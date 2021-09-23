@@ -47,7 +47,7 @@ public class CommandProcessor implements TabExecutor {
     private void onEvaluate(CommandSender sender, String[] args)
             throws IOException, InvalidConfigurationException {
 
-        int repeat = 1;
+        int repeat = 0;
         if (args.length > 0) {
             try {
                 repeat = Integer.parseInt(args[0]);

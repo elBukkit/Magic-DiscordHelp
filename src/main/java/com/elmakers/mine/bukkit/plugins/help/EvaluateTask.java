@@ -33,6 +33,8 @@ public class EvaluateTask implements Runnable {
     };
     private final Map<String, EvaluationProperty> properties = new HashMap<>();
 
+    private static final Map<String, Evaluation> evaluations = new HashMap<>();
+
     // Instance
     private final CommandSender sender;
     private final ConfigurationSection goals;
@@ -70,16 +72,16 @@ public class EvaluateTask implements Runnable {
     @Override
     public void run() {
         try {
-            if (repeat <= 1) {
+            if (repeat <= 0) {
                 runSingleEvaluation(sender);
                 return;
             }
             Map<String, Map<Double, Integer>> valueCounts = new HashMap<>();
             Map<String, Integer> bestCounts = new HashMap<>();
             Map<String, Double> bestValues = new HashMap<>();
-            for (int i = 0; i <= repeat; i++) {
+            for (int i = 0; i < repeat; i++) {
                 runEvaluation(sender);
-                if (i < repeat) {
+                if (i < repeat - 1) {
                     int remaining = repeat - i;
                     sender.sendMessage(ChatColor.YELLOW + "Remaining runs: "+ ChatColor.GOLD + remaining);
                 }
@@ -127,20 +129,15 @@ public class EvaluateTask implements Runnable {
     private void runSingleEvaluation(CommandSender sender) throws NoSuchFieldException, IllegalAccessException {
         sender.sendMessage("Checking current default values:");
         for (EvaluationProperty property : properties.values()) {
-            sender.sendMessage(ChatColor.DARK_AQUA + "Checking " + ChatColor.AQUA + property.getDescription()
+            sender.sendMessage(ChatColor.DARK_AQUA + " " + ChatColor.AQUA + property.getDescription()
                     + ChatColor.DARK_AQUA + " = " + property.getDefaultValue());
             property.restoreDefaultValue();
         }
         Evaluation evaluation = evaluate(goals, 0);
         sender.sendMessage("Score: " + ChatColor.GREEN + evaluation.getRatio());
-        Map<String, Integer> missing = new HashMap<>();
-        evaluation.getMissingTopics(missing);
+        Set<String> missing = evaluation.getMissingTopics();
         if (!missing.isEmpty()) {
-            List<String> messages = new ArrayList<>();
-            for (Map.Entry<String, Integer> entry : missing.entrySet()) {
-                messages.add(entry.getKey());
-            }
-            sender.sendMessage("Missing: " + StringUtils.join(messages, " | "));
+            sender.sendMessage("Missing: " + StringUtils.join(missing, " | "));
         }
     }
 
@@ -150,8 +147,13 @@ public class EvaluateTask implements Runnable {
         }
         sender.sendMessage("Applying recommended changes: ");
         for (Map.Entry<String, List<Evaluation>> entry : results.entrySet()) {
-            double value = entry.getValue().get(0).getValue();
+            Evaluation top = entry.getValue().get(0);
             EvaluationProperty property = properties.get(entry.getKey());
+            if (top.hasMissingTopics()) {
+                sender.sendMessage(ChatColor.RED + property.getDescription() + ChatColor.GRAY + " : " + ChatColor.GOLD + "skipped due to missing topics");
+                continue;
+            }
+            double value = top.getValue();
             sender.sendMessage(property.getDescription() + ChatColor.GRAY + " = " + ChatColor.GREEN + value);
             property.setDefaultValue(value);
         }
@@ -170,6 +172,8 @@ public class EvaluateTask implements Runnable {
                 value = searchSpace[0] + searchSpace[2] * i;
             }
         }
+        values.add(property.getDefaultValue());
+        Collections.sort(values);
         sender.sendMessage(ChatColor.DARK_AQUA + "Searching " + ChatColor.AQUA + propertyName
             + ChatColor.DARK_AQUA + " from " + ChatColor.GREEN + values.get(0)
             + ChatColor.DARK_AQUA + " to " + ChatColor.GREEN + values.get(values.size() - 1));
@@ -183,7 +187,7 @@ public class EvaluateTask implements Runnable {
         sender.sendMessage("");
         Map<String, Integer> missing = new HashMap<>();
         for (Evaluation evaluation : evaluations) {
-            evaluation.getMissingTopics(missing);
+            evaluation.addMissingTopics(missing);
         }
         if (!missing.isEmpty()) {
             List<String> messages = new ArrayList<>();
@@ -191,8 +195,9 @@ public class EvaluateTask implements Runnable {
                 messages.add(entry.getKey() + ": " + ChatUtils.printPercentage((double)entry.getValue() / evaluations.size()));
             }
             sender.sendMessage("Missing: " + StringUtils.join(messages, " | "));
+        } else {
+            results.put(propertyName, evaluations);
         }
-        results.put(propertyName, evaluations);
     }
 
     private void showEvaluation(CommandSender sender, List<Evaluation> evaluations) {
@@ -212,10 +217,16 @@ public class EvaluateTask implements Runnable {
         sender.sendMessage(valueRow);
     }
 
-    private Evaluation evaluate(ConfigurationSection goals, double value) {
+    private Evaluation evaluate(ConfigurationSection goals, double value) throws NoSuchFieldException, IllegalAccessException {
         Set<String> goalKeys = goals.getKeys(true);
         Help help = magic.getMessages().getHelp();
         help.resetStats();
+
+        String key = getEvaluationKey();
+        Evaluation existing = evaluations.get(key);
+        if (existing != null) {
+            return new Evaluation(existing, value);
+        }
 
         Evaluation evaluation = new Evaluation(value);
         for (String goal : goalKeys) {
@@ -230,6 +241,15 @@ public class EvaluateTask implements Runnable {
                 evaluation.addResults(matches, goal);
             }
         }
+        evaluations.put(key, evaluation);
         return evaluation;
+    }
+
+    private String getEvaluationKey() throws NoSuchFieldException, IllegalAccessException {
+        String key = "";
+        for (EvaluationProperty property : properties.values()) {
+            key += "|" + property.get();
+        }
+        return key;
     }
 }
