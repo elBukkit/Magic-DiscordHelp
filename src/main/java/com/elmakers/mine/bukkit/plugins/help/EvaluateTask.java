@@ -1,5 +1,6 @@
 package com.elmakers.mine.bukkit.plugins.help;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,13 +20,12 @@ import org.bukkit.plugin.Plugin;
 import com.elmakers.mine.bukkit.ChatUtils;
 import com.elmakers.mine.bukkit.magic.MagicController;
 import com.elmakers.mine.bukkit.utility.help.Help;
-import com.elmakers.mine.bukkit.utility.help.HelpTopicKeywordMatch;
 import com.elmakers.mine.bukkit.utility.help.HelpTopicMatch;
-import com.elmakers.mine.bukkit.utility.help.HelpTopicWord;
 import com.elmakers.mine.bukkit.utility.help.SearchFactors;
 
 public class EvaluateTask implements Runnable {
     private static final String NUMERIC_FORMAT = "%.1f";
+    private static final DecimalFormat PRECISE_FORMAT = new DecimalFormat("#.##");
     private static final int NUMERIC_WIDTH = 5;
 
     // min, max, step
@@ -57,7 +57,8 @@ public class EvaluateTask implements Runnable {
     private final ConfigurationSection goals;
     private final Plugin plugin;
     private final MagicController magic;
-    private final Map<String, List<Evaluation>> results = new HashMap<>();
+    private final List<Evaluation> runResults = new ArrayList<>();
+    private final List<Evaluation> results = new ArrayList<>();
     private final int repeat;
 
     public EvaluateTask(CommandSender sender, Plugin plugin, MagicController magic, ConfigurationSection goals, int repeat) {
@@ -97,53 +98,37 @@ public class EvaluateTask implements Runnable {
                 runSingleEvaluation(sender);
                 return;
             }
-            Map<String, Map<Double, Integer>> valueCounts = new HashMap<>();
-            Map<String, Integer> bestCounts = new HashMap<>();
-            Map<String, Double> bestValues = new HashMap<>();
             for (int i = 0; i < repeat; i++) {
                 runEvaluation(sender);
                 if (i < repeat - 1) {
                     int remaining = repeat - i;
                     sender.sendMessage(ChatColor.YELLOW + "Remaining runs: "+ ChatColor.GOLD + remaining);
                 }
-
-                for (Map.Entry<String, List<Evaluation>> entry : results.entrySet()) {
-                    double value = entry.getValue().get(0).getValue();
-                    String property = entry.getKey();
-                    Map<Double, Integer> valueCountMap = valueCounts.get(property);
-                    if (valueCountMap == null) {
-                        valueCountMap = new HashMap<>();
-                    }
-                    Integer valueCount = valueCountMap.get(value);
-                    if (valueCount == null) {
-                        valueCount = 1;
-                    } else {
-                        valueCount++;
-                    }
-                    valueCountMap.put(value, valueCount);
-                    Integer bestCount = bestCounts.get(property);
-                    if (bestCount == null || valueCount > bestCount) {
-                        bestCounts.put(property, valueCount);
-                        bestValues.put(property, value);
-                    }
-                }
-
-                results.clear();
+                runResults.clear();
             }
             if (repeat <= 1) {
                 sender.sendMessage(ChatColor.GOLD + " Finished.");
             } else {
-                sender.sendMessage(ChatColor.GOLD + " Finished, applying most common selections: ");
-                for (Map.Entry<String, EvaluationProperty> entry : properties.entrySet()) {
-                    String key = entry.getKey();
-                    Double value = bestValues.get(key);
-                    EvaluationProperty property = entry.getValue();
-                    if (value == null) {
-                        sender.sendMessage(ChatColor.RED + property.getDescription() + ChatColor.GRAY + " : " + ChatColor.GOLD + "skipped");
-                        continue;
+                Collections.sort(results);
+                Evaluation top = results.get(0);
+                sender.sendMessage("Finished, applying best selections over all runs from score of "
+                        + ChatColor.GREEN + String.format(NUMERIC_FORMAT, top.getRatio())
+                        + ChatColor.GRAY + " | "
+                        + ChatColor.AQUA + String.format(NUMERIC_FORMAT, top.getScore()));
+                double values[] = top.getValues();
+                int i = 0;
+                for (EvaluationProperty property : properties.values()) {
+                    double value = values[i++];
+                    String valueDesc = PRECISE_FORMAT.format(value);
+                    String defaultDesc = PRECISE_FORMAT.format(property.getDefaultValue());
+                    boolean changed = !valueDesc.equals(defaultDesc);
+                    ChatColor titleColor = changed ? ChatColor.AQUA : ChatColor.DARK_AQUA;
+                    sender.sendMessage(titleColor + property.getDescription() + ChatColor.GRAY + " from "
+                        + ChatColor.DARK_GREEN + defaultDesc
+                        + ChatColor.GRAY + " to " + ChatColor.GREEN + valueDesc);
+                    if (changed) {
+                        property.setDefaultValue(value);
                     }
-                    property.setDefaultValue(value);
-                    sender.sendMessage(property.getDescription() + ChatColor.GRAY + " from " + ChatColor.DARK_GREEN + property.getDefaultValue() + ChatColor.GRAY + " to " + ChatColor.GREEN + value);
                 }
             }
         } catch (Exception ex) {
@@ -159,7 +144,7 @@ public class EvaluateTask implements Runnable {
                     + ChatColor.DARK_AQUA + " = " + property.getDefaultValue());
             property.restoreDefaultValue();
         }
-        Evaluation evaluation = evaluate(goals, 0);
+        Evaluation evaluation = evaluate("", goals, 0);
         sender.sendMessage("Score: " + ChatColor.GREEN + String.format(NUMERIC_FORMAT, evaluation.getRatio())
             + ChatColor.GRAY + " | "
             + ChatColor.AQUA + String.format(NUMERIC_FORMAT, evaluation.getScore()));
@@ -173,23 +158,26 @@ public class EvaluateTask implements Runnable {
         for (EvaluationProperty property : properties.values()) {
             runEvaluation(sender, goals, property);
         }
-        sender.sendMessage("Applying recommended changes: ");
-        for (Map.Entry<String, EvaluationProperty> entry : properties.entrySet()) {
-            String key = entry.getKey();
-            EvaluationProperty property = entry.getValue();
-            List<Evaluation> evaluations = results.get(key);
-            if (evaluations == null) {
-                sender.sendMessage(ChatColor.RED + property.getDescription() + ChatColor.GRAY + " : " + ChatColor.GOLD + "skipped");
-                continue;
+        Collections.sort(runResults);
+        Evaluation top = runResults.get(0);
+        sender.sendMessage("Applying recommended changes from score of "
+                + ChatColor.GREEN + String.format(NUMERIC_FORMAT, top.getRatio())
+                + ChatColor.GRAY + " | "
+                + ChatColor.AQUA + String.format(NUMERIC_FORMAT, top.getScore()));
+        double values[] = top.getValues();
+        int i = 0;
+        for (EvaluationProperty property : properties.values()) {
+            double value = values[i++];
+            String valueDesc = PRECISE_FORMAT.format(value);
+            String defaultDesc = PRECISE_FORMAT.format(property.getDefaultValue());
+            boolean changed = !valueDesc.equals(defaultDesc);
+            ChatColor titleColor = changed ? ChatColor.AQUA : ChatColor.DARK_AQUA;
+            sender.sendMessage(titleColor + property.getDescription() + ChatColor.GRAY + " from "
+                + ChatColor.DARK_GREEN + defaultDesc
+                + ChatColor.GRAY + " to " + valueDesc);
+            if (changed) {
+                property.setDefaultValue(value);
             }
-            Evaluation top = evaluations.get(0);
-            if (top.hasMissingTopics()) {
-                sender.sendMessage(ChatColor.RED + property.getDescription() + ChatColor.GRAY + " : " + ChatColor.GOLD + "skipped due to missing topics");
-                continue;
-            }
-            double value = top.getValue();
-            sender.sendMessage(property.getDescription() + ChatColor.GRAY + " from " + ChatColor.DARK_GREEN + property.getDefaultValue() + ChatColor.GRAY + " to " + ChatColor.GREEN + value);
-            property.setDefaultValue(value);
         }
     }
 
@@ -204,7 +192,7 @@ public class EvaluateTask implements Runnable {
         List<Evaluation> evaluations = new ArrayList<>();
         for (double value : values) {
             property.set(value);
-            evaluations.add(evaluate(goals, value));
+            evaluations.add(evaluate(propertyName, goals, value));
         }
         property.restoreDefaultValue();
         showEvaluation(sender, evaluations);
@@ -220,7 +208,8 @@ public class EvaluateTask implements Runnable {
             }
             sender.sendMessage("Missing: " + StringUtils.join(messages, " | "));
         }
-        results.put(propertyName, evaluations);
+        runResults.addAll(evaluations);
+        results.addAll(evaluations);
     }
 
     private void showEvaluation(CommandSender sender, List<Evaluation> evaluations) {
@@ -230,8 +219,12 @@ public class EvaluateTask implements Runnable {
         String scoreRow = "";
         for (Evaluation evaluation : evaluations) {
             ChatColor color = evaluation.hasMissingTopics() ? ChatColor.RED : ChatColor.AQUA;
-            headerRow += color + ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, evaluation.getValue()), NUMERIC_WIDTH);
-            color = evaluation.hasMissingTopics() ? ChatColor.RED : ChatColor.GREEN;
+            headerRow += color + ChatUtils.getFixedWidth(PRECISE_FORMAT.format(evaluation.getValue()), NUMERIC_WIDTH);
+            if (evaluation.isCached()) {
+                color = evaluation.hasMissingTopics() ? ChatColor.DARK_RED : ChatColor.DARK_GREEN;
+            } else {
+                color = evaluation.hasMissingTopics() ? ChatColor.RED : ChatColor.GREEN;
+            }
             ratioRow += color + ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, evaluation.getRatio()), NUMERIC_WIDTH);
             scoreRow += color + ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, evaluation.getScore()), NUMERIC_WIDTH);
         }
@@ -242,18 +235,17 @@ public class EvaluateTask implements Runnable {
         sender.sendMessage(scoreRow);
     }
 
-    private Evaluation evaluate(ConfigurationSection goals, double value) throws NoSuchFieldException, IllegalAccessException {
+    private Evaluation evaluate(String propertyKey, ConfigurationSection goals, double value) throws NoSuchFieldException, IllegalAccessException {
         Set<String> goalKeys = goals.getKeys(true);
         Help help = magic.getMessages().getHelp();
         help.resetStats();
 
-        String key = getEvaluationKey();
-        Evaluation existing = evaluations.get(key);
+        Evaluation evaluation = new Evaluation(propertyKey, value, properties.values());
+        Evaluation existing = evaluations.get(evaluation.getKey());
         if (existing != null) {
             return new Evaluation(existing, value);
         }
 
-        Evaluation evaluation = new Evaluation(value);
         for (String goal : goalKeys) {
             List<String> queries = goals.getStringList(goal);
             if (queries == null || queries.isEmpty()) continue;
@@ -266,15 +258,7 @@ public class EvaluateTask implements Runnable {
                 evaluation.addResults(matches, goal);
             }
         }
-        evaluations.put(key, evaluation);
+        evaluations.put(evaluation.getKey(), evaluation);
         return evaluation;
-    }
-
-    private String getEvaluationKey() throws NoSuchFieldException, IllegalAccessException {
-        String key = "";
-        for (EvaluationProperty property : properties.values()) {
-            key += "|" + property.get();
-        }
-        return key;
     }
 }

@@ -1,5 +1,6 @@
 package com.elmakers.mine.bukkit.plugins.help;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -12,19 +13,39 @@ import com.elmakers.mine.bukkit.utility.help.HelpTopicMatch;
 
 public class Evaluation extends EvaluationScore implements Comparable<Evaluation> {
     private final double value;
+    private final String key;
+    private final double[] values;
+    private final boolean cached;
     private EvaluationScore currentGoal = null;
     private Set<String> missing = null;
     private Map<String, EvaluationScore> goalEvaluations = new HashMap<>();
 
-    public Evaluation(double value) {
+    public Evaluation(String searchingProperty, double value, Collection<EvaluationProperty> properties)
+            throws NoSuchFieldException, IllegalAccessException {
         this.value = value;
+        this.values = new double[properties.size()];
+        String key = "";
+        int i = 0;
+        for (EvaluationProperty property : properties) {
+            double propertyValue = property.get();
+            if (property.getProperty().equals(searchingProperty)) {
+                propertyValue = value;
+            }
+            key += "|" + propertyValue;
+            values[i++] = propertyValue;
+        }
+        this.key = key;
+        this.cached = false;
     }
 
     public Evaluation(Evaluation evaluation, double value) {
         super(evaluation);
+        this.key = evaluation.key;
+        this.values = evaluation.values;
         this.value = value;
         this.currentGoal = evaluation.currentGoal;
         this.goalEvaluations = evaluation.goalEvaluations;
+        this.cached = true;
     }
 
     public void setGoal(String goal) {
@@ -97,5 +118,17 @@ public class Evaluation extends EvaluationScore implements Comparable<Evaluation
 
     public boolean hasMissingTopics() {
         return !getMissingTopics().isEmpty();
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public double[] getValues() {
+        return values;
+    }
+
+    public boolean isCached() {
+        return cached;
     }
 }

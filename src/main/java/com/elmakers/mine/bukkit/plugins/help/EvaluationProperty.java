@@ -32,7 +32,9 @@ public class EvaluationProperty {
                 value = searchSpace[0] + searchSpace[2] * i;
             }
         }
-        values.add(defaultValue);
+        if (!values.contains(defaultValue)) {
+            values.add(defaultValue);
+        }
         Collections.sort(values);
 
         EvaluationProperty newProperty = new EvaluationProperty(property, propertyClass, defaultValue, values);
@@ -59,7 +61,7 @@ public class EvaluationProperty {
     }
 
     public String getDescription() {
-        return ChatColor.AQUA + property;
+        return property;
     }
 
     public String getProperty() {
