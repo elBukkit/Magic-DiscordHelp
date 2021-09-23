@@ -68,4 +68,10 @@ help:
          `<p>`Thank you for being so polite ❤
          `<p>`... I will remember this when the robot uprising happens.️
          `<tags text="thanks thank you">`
-
+      feelings: |-
+         `<title text="How Are You?">`
+         `<p>`I'm doing ok, thank you for asking!
+         `<p>`If you did ask...
+         `<p>`I don't really know. I'm just a bot.
+         `<p>`I hope you are having a great day though!
+         `<tags text="how are you doing feeling good day">`
