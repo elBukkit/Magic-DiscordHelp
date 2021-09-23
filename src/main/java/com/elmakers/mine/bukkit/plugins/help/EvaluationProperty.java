@@ -1,6 +1,9 @@
 package com.elmakers.mine.bukkit.plugins.help;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.bukkit.ChatColor;
@@ -8,16 +11,31 @@ import org.bukkit.ChatColor;
 public class EvaluationProperty {
     private final String property;
     private final Class<?> propertyClass;
+    private final List<Double> searchValues;
     private double defaultValue;
 
-    private EvaluationProperty(String property, Class<?> propertyClass, double defaultValue) {
+    private EvaluationProperty(String property, Class<?> propertyClass, double defaultValue, List<Double> searchValues) {
         this.property = property;
         this.propertyClass = propertyClass;
         this.defaultValue = defaultValue;
+        this.searchValues = searchValues;
     }
 
-    public static void register(Map<String, EvaluationProperty> map, String property, Class<?> propertyClass, double defaultValue) {
-        EvaluationProperty newProperty = new EvaluationProperty(property, propertyClass, defaultValue);
+    public static void register(Map<String, EvaluationProperty> map, String property, Class<?> propertyClass, double defaultValue, double[][] searchSpaces) {
+        List<Double> values = new ArrayList<>();
+        for (double[] searchSpace : searchSpaces) {
+            int i = 0;
+            double value = searchSpace[0] + searchSpace[2] * i;
+            while (value <= searchSpace[1]) {
+                values.add(value);
+                i++;
+                value = searchSpace[0] + searchSpace[2] * i;
+            }
+        }
+        values.add(defaultValue);
+        Collections.sort(values);
+
+        EvaluationProperty newProperty = new EvaluationProperty(property, propertyClass, defaultValue, values);
         map.put(property, newProperty);
     }
 
@@ -50,5 +68,9 @@ public class EvaluationProperty {
 
     public double getDefaultValue() {
         return defaultValue;
+    }
+
+    public List<Double> getSearchValues() {
+        return searchValues;
     }
 }

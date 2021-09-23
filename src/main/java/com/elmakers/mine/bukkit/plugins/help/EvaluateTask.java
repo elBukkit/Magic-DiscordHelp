@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,12 +27,26 @@ public class EvaluateTask implements Runnable {
     private static final String NUMERIC_FORMAT = "%.1f";
 
     // min, max, step
-    public static final double[][] SEARCH_SPACES = {
+    public static final double[][] WEIGHT_SEARCH_SPACES = {
         {0.1, 1.0, 0.1},
         {1.5, 5.0, 0.5},
         {5.1, 6.0, 0.1}
     };
-    private final Map<String, EvaluationProperty> properties = new HashMap<>();
+    public static final double[][] FACTOR_SEARCH_SPACES = {
+        {0.1, 1.0, 0.1},
+        {1.2, 3.0, 0.2},
+        {3.1, 4.0, 0.1}
+    };
+    public static final double[][] SCALE_SEARCH_SPACES = {
+        {0.01, 0.1, 0.01},
+        {0.2, 0.9, 0.1},
+        {0.91, 1, 0.01}
+    };
+    public static final double[][] COUNT_SEARCH_SPACES = {
+        {1, 20, 1}
+    };
+
+    private final Map<String, EvaluationProperty> properties = new LinkedHashMap<>();
 
     private static final Map<String, Evaluation> evaluations = new HashMap<>();
 
@@ -50,23 +65,25 @@ public class EvaluateTask implements Runnable {
         this.magic = magic;
         this.repeat = repeat;
 
-        EvaluationProperty.register(properties, "COUNT_FACTOR", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_FACTOR);
-        EvaluationProperty.register(properties, "WORD_FACTOR", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.WORD_FACTOR);
-        EvaluationProperty.register(properties, "SIMILARITY_FACTOR", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.SIMILARITY_FACTOR);
-        EvaluationProperty.register(properties, "COUNT_WEIGHT", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_WEIGHT);
-        EvaluationProperty.register(properties, "WORD_WEIGHT", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_WEIGHT);
-        EvaluationProperty.register(properties, "CONTENT_FACTOR", HelpTopicMatch.class, HelpTopicMatch.CONTENT_FACTOR);
-        EvaluationProperty.register(properties, "TAG_FACTOR", HelpTopicMatch.class, HelpTopicMatch.TAG_FACTOR);
-        EvaluationProperty.register(properties, "TITLE_FACTOR", HelpTopicMatch.class, HelpTopicMatch.TITLE_FACTOR);
-        EvaluationProperty.register(properties, "CONTENT_WEIGHT", HelpTopicMatch.class, HelpTopicMatch.CONTENT_WEIGHT);
-        EvaluationProperty.register(properties, "TAG_WEIGHT", HelpTopicMatch.class, HelpTopicMatch.TAG_WEIGHT);
-        EvaluationProperty.register(properties, "TITLE_WEIGHT", HelpTopicMatch.class, HelpTopicMatch.TITLE_WEIGHT);
-        EvaluationProperty.register(properties, "RARITY_FACTOR", HelpTopicWord.class, HelpTopicWord.RARITY_FACTOR);
-        EvaluationProperty.register(properties, "TOPIC_RARITY_FACTOR", HelpTopicWord.class, HelpTopicWord.TOPIC_RARITY_FACTOR);
-        EvaluationProperty.register(properties, "LENGTH_FACTOR", HelpTopicWord.class, HelpTopicWord.LENGTH_FACTOR);
-        EvaluationProperty.register(properties, "RARITY_WEIGHT", HelpTopicWord.class, HelpTopicWord.RARITY_WEIGHT);
-        EvaluationProperty.register(properties, "TOPIC_RARITY_WEIGHT", HelpTopicWord.class, HelpTopicWord.TOPIC_RARITY_WEIGHT);
-        EvaluationProperty.register(properties, "LENGTH_WEIGHT", HelpTopicWord.class, HelpTopicWord.LENGTH_WEIGHT);
+        EvaluationProperty.register(properties, "COUNT_FACTOR", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "WORD_FACTOR", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.WORD_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "SIMILARITY_FACTOR", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.SIMILARITY_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "COUNT_WEIGHT", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "WORD_WEIGHT", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "MIN_SIMILARITY", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.MIN_SIMILARITY, SCALE_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "COUNT_MAX", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_MAX, COUNT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "CONTENT_FACTOR", HelpTopicMatch.class, HelpTopicMatch.CONTENT_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "TAG_FACTOR", HelpTopicMatch.class, HelpTopicMatch.TAG_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "TITLE_FACTOR", HelpTopicMatch.class, HelpTopicMatch.TITLE_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "CONTENT_WEIGHT", HelpTopicMatch.class, HelpTopicMatch.CONTENT_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "TAG_WEIGHT", HelpTopicMatch.class, HelpTopicMatch.TAG_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "TITLE_WEIGHT", HelpTopicMatch.class, HelpTopicMatch.TITLE_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "RARITY_FACTOR", HelpTopicWord.class, HelpTopicWord.RARITY_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "TOPIC_RARITY_FACTOR", HelpTopicWord.class, HelpTopicWord.TOPIC_RARITY_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "LENGTH_FACTOR", HelpTopicWord.class, HelpTopicWord.LENGTH_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "RARITY_WEIGHT", HelpTopicWord.class, HelpTopicWord.RARITY_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "TOPIC_RARITY_WEIGHT", HelpTopicWord.class, HelpTopicWord.TOPIC_RARITY_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "LENGTH_WEIGHT", HelpTopicWord.class, HelpTopicWord.LENGTH_WEIGHT, WEIGHT_SEARCH_SPACES);
     }
 
     @Override
@@ -113,11 +130,16 @@ public class EvaluateTask implements Runnable {
                 sender.sendMessage(ChatColor.GOLD + " Finished.");
             } else {
                 sender.sendMessage(ChatColor.GOLD + " Finished, applying most common selections: ");
-                for (Map.Entry<String, Double> entry : bestValues.entrySet()) {
-                    double value = entry.getValue();
-                    EvaluationProperty evaluationProperty = properties.get(entry.getKey());
-                    evaluationProperty.setDefaultValue(value);
-                    sender.sendMessage(evaluationProperty.getDescription() + ChatColor.GRAY + " = " + ChatColor.GREEN + value);
+                for (Map.Entry<String, EvaluationProperty> entry : properties.entrySet()) {
+                    String key = entry.getKey();
+                    Double value = bestValues.get(key);
+                    EvaluationProperty property = entry.getValue();
+                    if (value == null) {
+                        sender.sendMessage(ChatColor.RED + property.getDescription() + ChatColor.GRAY + " : " + ChatColor.GOLD + "skipped");
+                        continue;
+                    }
+                    property.setDefaultValue(value);
+                    sender.sendMessage(property.getDescription() + ChatColor.GRAY + " from " + ChatColor.DARK_GREEN + property.getDefaultValue() + ChatColor.GRAY + " to " + ChatColor.GREEN + value);
                 }
             }
         } catch (Exception ex) {
@@ -146,15 +168,21 @@ public class EvaluateTask implements Runnable {
             runEvaluation(sender, goals, property);
         }
         sender.sendMessage("Applying recommended changes: ");
-        for (Map.Entry<String, List<Evaluation>> entry : results.entrySet()) {
-            Evaluation top = entry.getValue().get(0);
-            EvaluationProperty property = properties.get(entry.getKey());
+        for (Map.Entry<String, EvaluationProperty> entry : properties.entrySet()) {
+            String key = entry.getKey();
+            EvaluationProperty property = entry.getValue();
+            List<Evaluation> evaluations = results.get(key);
+            if (evaluations == null) {
+                sender.sendMessage(ChatColor.RED + property.getDescription() + ChatColor.GRAY + " : " + ChatColor.GOLD + "skipped");
+                continue;
+            }
+            Evaluation top = evaluations.get(0);
             if (top.hasMissingTopics()) {
                 sender.sendMessage(ChatColor.RED + property.getDescription() + ChatColor.GRAY + " : " + ChatColor.GOLD + "skipped due to missing topics");
                 continue;
             }
             double value = top.getValue();
-            sender.sendMessage(property.getDescription() + ChatColor.GRAY + " = " + ChatColor.GREEN + value);
+            sender.sendMessage(property.getDescription() + ChatColor.GRAY + " from " + ChatColor.DARK_GREEN + property.getDefaultValue() + ChatColor.GRAY + " to " + ChatColor.GREEN + value);
             property.setDefaultValue(value);
         }
     }
@@ -162,21 +190,11 @@ public class EvaluateTask implements Runnable {
     private void runEvaluation(CommandSender sender, ConfigurationSection goals, EvaluationProperty property)
             throws NoSuchFieldException, IllegalAccessException {
         String propertyName = property.getProperty();
-        List<Double> values = new ArrayList<>();
-        for (double[] searchSpace : SEARCH_SPACES) {
-            int i = 0;
-            double value = searchSpace[0] + searchSpace[2] * i;
-            while (value <= searchSpace[1]) {
-                values.add(value);
-                i++;
-                value = searchSpace[0] + searchSpace[2] * i;
-            }
-        }
-        values.add(property.getDefaultValue());
-        Collections.sort(values);
+        List<Double> values = property.getSearchValues();
         sender.sendMessage(ChatColor.DARK_AQUA + "Searching " + ChatColor.AQUA + propertyName
             + ChatColor.DARK_AQUA + " from " + ChatColor.GREEN + values.get(0)
-            + ChatColor.DARK_AQUA + " to " + ChatColor.GREEN + values.get(values.size() - 1));
+            + ChatColor.DARK_AQUA + " to " + ChatColor.GREEN + values.get(values.size() - 1)
+            + ChatColor.DARK_AQUA + " currently set to " + ChatColor.YELLOW + property.getDefaultValue());
         List<Evaluation> evaluations = new ArrayList<>();
         for (double value : values) {
             property.set(value);
@@ -195,9 +213,8 @@ public class EvaluateTask implements Runnable {
                 messages.add(entry.getKey() + ": " + ChatUtils.printPercentage((double)entry.getValue() / evaluations.size()));
             }
             sender.sendMessage("Missing: " + StringUtils.join(messages, " | "));
-        } else {
-            results.put(propertyName, evaluations);
         }
+        results.put(propertyName, evaluations);
     }
 
     private void showEvaluation(CommandSender sender, List<Evaluation> evaluations) {
