@@ -9,7 +9,7 @@ examples.survival.wand_crafting:
   - how do players get wands
   - how do I get a wand
 
-examples.survival.spellpoints:
+spellpoints:
   - how do I get sp
   - how do i get spell points
   - give sp
@@ -26,7 +26,7 @@ examples.survival.dragons:
   - dragons not working
   - dragons don't work
 
-examples.survival.wandgui:
+wandgui:
   - how do I turn off the action bar
   - how do i use the boss bar
   - disable action bar
