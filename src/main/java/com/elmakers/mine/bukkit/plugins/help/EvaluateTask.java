@@ -22,6 +22,7 @@ import com.elmakers.mine.bukkit.utility.help.Help;
 import com.elmakers.mine.bukkit.utility.help.HelpTopicKeywordMatch;
 import com.elmakers.mine.bukkit.utility.help.HelpTopicMatch;
 import com.elmakers.mine.bukkit.utility.help.HelpTopicWord;
+import com.elmakers.mine.bukkit.utility.help.SearchFactors;
 
 public class EvaluateTask implements Runnable {
     private static final String NUMERIC_FORMAT = "%.1f";
@@ -65,25 +66,27 @@ public class EvaluateTask implements Runnable {
         this.magic = magic;
         this.repeat = repeat;
 
-        EvaluationProperty.register(properties, "COUNT_FACTOR", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_FACTOR, FACTOR_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "WORD_FACTOR", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.WORD_FACTOR, FACTOR_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "SIMILARITY_FACTOR", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.SIMILARITY_FACTOR, FACTOR_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "COUNT_WEIGHT", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_WEIGHT, WEIGHT_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "WORD_WEIGHT", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_WEIGHT, WEIGHT_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "MIN_SIMILARITY", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.MIN_SIMILARITY, SCALE_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "COUNT_MAX", HelpTopicKeywordMatch.class, HelpTopicKeywordMatch.COUNT_MAX, COUNT_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "CONTENT_FACTOR", HelpTopicMatch.class, HelpTopicMatch.CONTENT_FACTOR, FACTOR_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "TAG_FACTOR", HelpTopicMatch.class, HelpTopicMatch.TAG_FACTOR, FACTOR_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "TITLE_FACTOR", HelpTopicMatch.class, HelpTopicMatch.TITLE_FACTOR, FACTOR_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "CONTENT_WEIGHT", HelpTopicMatch.class, HelpTopicMatch.CONTENT_WEIGHT, WEIGHT_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "TAG_WEIGHT", HelpTopicMatch.class, HelpTopicMatch.TAG_WEIGHT, WEIGHT_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "TITLE_WEIGHT", HelpTopicMatch.class, HelpTopicMatch.TITLE_WEIGHT, WEIGHT_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "RARITY_FACTOR", HelpTopicWord.class, HelpTopicWord.RARITY_FACTOR, FACTOR_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "TOPIC_RARITY_FACTOR", HelpTopicWord.class, HelpTopicWord.TOPIC_RARITY_FACTOR, FACTOR_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "LENGTH_FACTOR", HelpTopicWord.class, HelpTopicWord.LENGTH_FACTOR, FACTOR_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "RARITY_WEIGHT", HelpTopicWord.class, HelpTopicWord.RARITY_WEIGHT, WEIGHT_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "TOPIC_RARITY_WEIGHT", HelpTopicWord.class, HelpTopicWord.TOPIC_RARITY_WEIGHT, WEIGHT_SEARCH_SPACES);
-        EvaluationProperty.register(properties, "LENGTH_WEIGHT", HelpTopicWord.class, HelpTopicWord.LENGTH_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "COUNT_FACTOR", SearchFactors.class, SearchFactors.COUNT_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "WORD_FACTOR", SearchFactors.class, SearchFactors.WORD_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "SIMILARITY_FACTOR", SearchFactors.class, SearchFactors.SIMILARITY_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "COUNT_WEIGHT", SearchFactors.class, SearchFactors.COUNT_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "WORD_WEIGHT", SearchFactors.class, SearchFactors.WORD_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "MIN_SIMILARITY", SearchFactors.class, SearchFactors.MIN_SIMILARITY, SCALE_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "COUNT_MAX", SearchFactors.class, SearchFactors.COUNT_MAX, COUNT_SEARCH_SPACES);
+
+        EvaluationProperty.register(properties, "CONTENT_FACTOR", SearchFactors.class, SearchFactors.CONTENT_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "TAG_FACTOR", SearchFactors.class, SearchFactors.TAG_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "TITLE_FACTOR", SearchFactors.class, SearchFactors.TITLE_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "CONTENT_WEIGHT", SearchFactors.class, SearchFactors.CONTENT_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "TAG_WEIGHT", SearchFactors.class, SearchFactors.TAG_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "TITLE_WEIGHT", SearchFactors.class, SearchFactors.TITLE_WEIGHT, WEIGHT_SEARCH_SPACES);
+
+        EvaluationProperty.register(properties, "RARITY_FACTOR", SearchFactors.class, SearchFactors.RARITY_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "TOPIC_RARITY_FACTOR", SearchFactors.class, SearchFactors.TOPIC_RARITY_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "LENGTH_FACTOR", SearchFactors.class, SearchFactors.LENGTH_FACTOR, FACTOR_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "RARITY_WEIGHT", SearchFactors.class, SearchFactors.RARITY_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "TOPIC_RARITY_WEIGHT", SearchFactors.class, SearchFactors.TOPIC_RARITY_WEIGHT, WEIGHT_SEARCH_SPACES);
+        EvaluationProperty.register(properties, "LENGTH_WEIGHT", SearchFactors.class, SearchFactors.LENGTH_WEIGHT, WEIGHT_SEARCH_SPACES);
     }
 
     @Override
@@ -156,7 +159,7 @@ public class EvaluateTask implements Runnable {
             property.restoreDefaultValue();
         }
         Evaluation evaluation = evaluate(goals, 0);
-        sender.sendMessage("Score: " + ChatColor.GREEN + evaluation.getRatio());
+        sender.sendMessage("Score: " + ChatColor.GREEN + ChatUtils.printPercentage(evaluation.getRatio()));
         Set<String> missing = evaluation.getMissingTopics();
         if (!missing.isEmpty()) {
             sender.sendMessage("Missing: " + StringUtils.join(missing, " | "));
@@ -226,7 +229,7 @@ public class EvaluateTask implements Runnable {
             ChatColor color = evaluation.hasMissingTopics() ? ChatColor.RED : ChatColor.AQUA;
             headerRow += color + ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, evaluation.getValue()), NUMERIC_WIDTH);
             color = evaluation.hasMissingTopics() ? ChatColor.RED : ChatColor.GREEN;
-            valueRow += color + ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, evaluation.getRatio()), NUMERIC_WIDTH);
+            valueRow += color + ChatUtils.getFixedWidth(String.format(NUMERIC_FORMAT, ChatUtils.printRatio(evaluation.getRatio())), NUMERIC_WIDTH);
         }
         sender.sendMessage(headerRow);
         int totalWidth = NUMERIC_WIDTH * evaluations.size();
