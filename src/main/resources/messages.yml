@@ -75,3 +75,13 @@ help:
          `<p>`I don't really know. I'm just a bot.
          `<p>`I hope you are having a great day though!
          `<tags text="how are you doing feeling good day">`
+      donating: |-
+         `<title text="Donating to the Plugin">`
+         `<p>`Do you want to support Magic plugin development?
+         `<p>`Well, thank you!
+         `<p>`NathanWolf does this for the love of it, and doesn't really need money.
+         `<p>`So if you would like, please choose your favorite charity and donate there instead!
+         `<p>`I always suggest going local, a little money to a food bank can go a long way.
+         `<p>`We do have a donation link though, if you really want.
+         `<p>`Either way, it is appreciated! ♥
+         `<li>``<link url="https://donate.elmakers.com/" text="Donate to elMakers">`️
