@@ -106,3 +106,13 @@ reference.actions.check_inventory:
   - check inventory action
   - inventory reference action
   - check inventory spell action
+
+discord.birthday:
+  - Miha, when is your birthday?
+  - What is your birthday?
+  - When was miha born?
+
+discord.miha:
+  - Hello!
+  - Hi
+  - Hello Miha
