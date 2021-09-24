@@ -19,6 +19,8 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
     private String token;
     private String channel;
     private String commandChannel;
+    private String mentionChannel;
+    private String mentionId;
     private String reactionChannel;
     private String ignoreChannel;
     private String reactionEmote;
@@ -50,10 +52,12 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
         channel = getConfig().getString("channel", "");
         commandChannel = getConfig().getString("command_channel", "*");
         reactionChannel = getConfig().getString("reaction_channel", "*");
+        mentionChannel = getConfig().getString("mention_channel", "*");
         ignoreChannel = getConfig().getString("ignore_channel", "");
         reactionEmote = getConfig().getString("reaction_emote", "");
         guildId = getConfig().getString("guild", "");
         joinRole = getConfig().getString("join_role", "");
+        mentionId = getConfig().getString("mention_id", "");
         command = getConfig().getString("command", "mhelp");
         debug = getConfig().getBoolean("debug", false);
         if (token == null || token.isEmpty()) {
@@ -95,6 +99,14 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
 
     public String getCommandChannel() {
         return commandChannel;
+    }
+
+    public String getMentionChannel() {
+        return mentionChannel;
+    }
+
+    public String getMentionId() {
+        return mentionId;
     }
 
     public String getJoinRole() {

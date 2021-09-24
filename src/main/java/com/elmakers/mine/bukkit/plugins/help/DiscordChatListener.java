@@ -366,9 +366,29 @@ public class DiscordChatListener extends ListenerAdapter {
         if (author.isBot()) return;
         MessageChannel channel = event.getChannel();
         if (channel.getName().equals(controller.getIgnoreChannel())) return;
-        if (!channel.getName().equals(controller.getChannel())) return;
+
         Message message = event.getMessage();
-        if (message.getMessageReference() != null) return;
+        List<Member> members = message.getMentionedMembers();
+
+        boolean mentioned = false;
+        String mentionChannel = controller.getMentionChannel();
+        String mentionId = controller.getMentionId();
+        if (!mentionId.isEmpty() && !members.isEmpty()
+            && (mentionChannel.equals("*") || mentionChannel.equals(channel.getName()))
+        ) {
+            for (Member member : members) {
+                if (member.getId().equals(mentionId)) {
+                    mentioned = true;
+                    break;
+                }
+            }
+        }
+
+        // Only listen to a specific channel, unless mentioned
+        if (!mentioned && !channel.getName().equals(controller.getChannel())) return;
+
+        // Ignore replies, unless mentioning
+        if (!mentioned && message.getMessageReference() != null) return;
         respondToMessage(message);
     }
 
