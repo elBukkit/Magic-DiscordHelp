@@ -373,15 +373,18 @@ public class DiscordChatListener extends ListenerAdapter {
         boolean mentioned = false;
         String mentionChannel = controller.getMentionChannel();
         String mentionId = controller.getMentionId();
-        if (!mentionId.isEmpty() && !members.isEmpty()
-            && (mentionChannel.equals("*") || mentionChannel.equals(channel.getName()))
-        ) {
-            for (Member member : members) {
-                if (member.getId().equals(mentionId)) {
-                    mentioned = true;
-                    break;
-                }
+        List<Member> mention = new ArrayList<>();
+
+        for (Member member : members) {
+            if (member.getId().equals(mentionId)) {
+                mentioned = true;
+            } else {
+                mention.add(member);
             }
+        }
+
+        if (!mentionChannel.equals("*") && !mentionChannel.equals(channel.getName())) {
+            mentioned = false;
         }
 
         // Only listen to a specific channel, unless mentioned
@@ -389,7 +392,7 @@ public class DiscordChatListener extends ListenerAdapter {
 
         // Ignore replies, unless mentioning
         if (!mentioned && message.getMessageReference() != null) return;
-        respondToMessage(message);
+        respondToMessage(message, mention);
     }
 
     @Override
@@ -506,6 +509,10 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     protected void respondToMessage(Message message) {
+        respondToMessage(message, null);
+    }
+
+    protected void respondToMessage(Message message, List<Member> mentions) {
         String msg = message.getContentDisplay();
         User author = message.getAuthor();
         if (!sentLanguage.contains(author.getIdLong())) {
@@ -521,6 +528,15 @@ public class DiscordChatListener extends ListenerAdapter {
 
         List<Button> buttons = new ArrayList<>();
         String response = getTopResponse(msg, buttons, message.getId());
+        if (mentions != null && !mentions.isEmpty()) {
+            List<String> mentionStrings = new ArrayList<>();
+            for (Member member : mentions) {
+                mentionStrings.add(member.getAsMention());
+            }
+            String mention = controller.getMagic().getMessages().get("discord.showing");
+            mention = mention.replace("$mentions", StringUtils.join(mentionStrings, " "));
+            response = mention + "\n" + response;
+        }
         respond(message, response, buttons);
     }
 }

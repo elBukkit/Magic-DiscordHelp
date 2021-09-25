@@ -33,6 +33,7 @@ discord:
    verified_invalid: That button was not meant for you. Please ask some questions, or click the button on this message.
    verify_button: I Need More Support, Please Let Me In
    verify_first_button: I Need Human Support, Please Let Me In
+   showing: "$mentions please take a look:"
 
 help:
    discord:
