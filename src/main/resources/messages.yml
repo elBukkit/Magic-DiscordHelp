@@ -87,3 +87,12 @@ help:
          `<p>`Either way, it is appreciated! ♥
          `<li>``<link url="https://donate.elmakers.com/" text="Donate to elMakers">`️
          `<tags text="donation donating donate support plugin">`
+      testserver: |-
+         `<title text="Demo Server">`
+         `<p>`There is a demo server available at
+         `<p>`mine.elmakers.com
+         `<p>`There you can try out all of the features of the plugin
+         `<p>`Including the full survival experience and most examples.
+         `<p>`You can also use the `<link url="https://sandbox.elmakers.com/" text="sandbox server">` to demo the spell editor.
+         `<tags text="test server demo">`
+
