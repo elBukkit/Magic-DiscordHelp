@@ -25,6 +25,7 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
     private String ignoreChannel;
     private String reactionEmote;
     private String joinRole;
+    private String joinChannel;
     private String guildId;
     private String command;
     private boolean debug;
@@ -57,6 +58,7 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
         reactionEmote = getConfig().getString("reaction_emote", "");
         guildId = getConfig().getString("guild", "");
         joinRole = getConfig().getString("join_role", "");
+        joinChannel = getConfig().getString("join_channel", "");
         mentionId = getConfig().getString("mention_id", "");
         command = getConfig().getString("command", "mhelp");
         debug = getConfig().getBoolean("debug", false);
@@ -64,6 +66,10 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
             getLogger().warning("Please put your bot token in config.yml, otherwise this plugin can't work");
         } else {
             getServer().getScheduler().runTaskAsynchronously(this, new JDAConnector(this));
+        }
+
+        if (joinChannel != null && !joinChannel.isEmpty()) {
+            getLogger().info("Sending join messages to " + joinChannel);
         }
 
         CommandProcessor processor = new CommandProcessor(this, magic);
@@ -83,6 +89,10 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
 
     public String getChannel() {
         return channel;
+    }
+
+    public String getWelcomeChannel() {
+        return joinChannel != null && !joinChannel.isEmpty() ? joinChannel : channel;
     }
 
     public String getReactionChannel() {

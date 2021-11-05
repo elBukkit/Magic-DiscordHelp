@@ -329,7 +329,7 @@ public class DiscordChatListener extends ListenerAdapter {
         Member member = event.getMember();
         guild.addRoleToMember(member, role).queue(success -> controller.getLogger().info("Assigned join role to " + member.getEffectiveName()), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to assign role to " + member.getEffectiveName(), throwable));
 
-        String channelName = controller.getChannel();
+        String channelName = controller.getWelcomeChannel();
         List<TextChannel> helpChannels = guild.getTextChannelsByName(channelName, true);
         if (!helpChannels.isEmpty()) {
             MessageChannel helpChannel = helpChannels.get(0);
