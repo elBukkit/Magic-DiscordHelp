@@ -34,6 +34,7 @@ discord:
    verify_button: I Need More Support, Please Let Me In
    verify_first_button: I Need Human Support, Please Let Me In
    showing: "$mentions please take a look:"
+   bug_report: "Please submit bug reports to Github: https://github.com/elBukkit/MagicPlugin/issues"
 
 help:
    discord:

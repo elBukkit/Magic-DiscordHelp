@@ -26,3 +26,6 @@ command_channel: "*"
 
 # Turn on relevance displays and other debug info
 debug: false
+
+response_channels:
+  "bug-reports": discord.bug_report

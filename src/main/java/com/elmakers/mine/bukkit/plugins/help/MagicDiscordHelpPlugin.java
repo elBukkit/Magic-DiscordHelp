@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.logging.Level;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -28,6 +29,7 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
     private String joinChannel;
     private String guildId;
     private String command;
+    private ConfigurationSection responseChannels;
     private boolean debug;
     private JDA jda = null;
     private MagicController magic;
@@ -62,6 +64,7 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
         mentionId = getConfig().getString("mention_id", "");
         command = getConfig().getString("command", "mhelp");
         debug = getConfig().getBoolean("debug", false);
+        responseChannels = getConfig().getConfigurationSection("response_channels");
         if (token == null || token.isEmpty()) {
             getLogger().warning("Please put your bot token in config.yml, otherwise this plugin can't work");
         } else {
@@ -129,6 +132,10 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
 
     public String getGuild() {
         return guildId;
+    }
+
+    public String getChannelResponse(String channel) {
+        return responseChannels == null ? null : responseChannels.getString(channel);
     }
 
     public boolean isDebug() {

@@ -83,14 +83,14 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     protected void addButtons(Member member, ReplyAction action, List<Button> buttons) {
-        if (!buttons.isEmpty()) {
+        if (buttons != null && !buttons.isEmpty()) {
             buttons = processButtons(member, buttons);
             action.addActionRows(getActionRows(buttons));
         }
     }
 
     protected void addButtons(Member member, MessageAction action, List<Button> buttons) {
-        if (!buttons.isEmpty()) {
+        if (buttons != null && !buttons.isEmpty()) {
             buttons = processButtons(member, buttons);
             action.setActionRows(getActionRows(buttons));
         }
@@ -368,6 +368,13 @@ public class DiscordChatListener extends ListenerAdapter {
         if (channel.getName().equals(controller.getIgnoreChannel())) return;
 
         Message message = event.getMessage();
+        String channelResponse = controller.getChannelResponse(channel.getName());
+        channelResponse = controller.getMagic().getMessages().get(channelResponse, channelResponse);
+        if (channelResponse != null && !channelResponse.isEmpty()) {
+            respond(message, channelResponse, null);
+            return;
+        }
+
         List<Member> members = message.getMentionedMembers();
 
         boolean mentioned = false;
