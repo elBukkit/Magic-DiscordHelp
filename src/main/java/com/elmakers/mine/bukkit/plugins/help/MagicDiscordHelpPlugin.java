@@ -15,6 +15,8 @@ import com.elmakers.mine.bukkit.magic.MagicPlugin;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.emoji.CustomEmoji;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 
 public class MagicDiscordHelpPlugin extends JavaPlugin {
     private String token;
@@ -25,6 +27,7 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
     private String reactionChannel;
     private String ignoreChannel;
     private String reactionEmote;
+    private Emoji reactionEmoji;
     private String joinRole;
     private String joinChannel;
     private String guildId;
@@ -58,6 +61,9 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
         mentionChannel = getConfig().getString("mention_channel", "*");
         ignoreChannel = getConfig().getString("ignore_channel", "");
         reactionEmote = getConfig().getString("reaction_emote", "");
+        if (!reactionEmote.isEmpty()) {
+            reactionEmoji = Emoji.fromFormatted(reactionEmote);
+        }
         guildId = getConfig().getString("guild", "");
         joinRole = getConfig().getString("join_role", "");
         joinChannel = getConfig().getString("join_channel", "");
@@ -108,6 +114,10 @@ public class MagicDiscordHelpPlugin extends JavaPlugin {
 
     public String getReactionEmote() {
         return reactionEmote;
+    }
+
+    public Emoji getReactionEmoji() {
+        return reactionEmoji;
     }
 
     public String getCommandChannel() {

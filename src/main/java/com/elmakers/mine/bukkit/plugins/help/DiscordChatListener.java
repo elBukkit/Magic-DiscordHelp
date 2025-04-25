@@ -21,27 +21,29 @@ import com.google.common.collect.ImmutableSet;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageReaction;
 import net.dv8tion.jda.api.entities.MessageReference;
 import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
-import net.dv8tion.jda.api.events.interaction.ButtonClickEvent;
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
-import net.dv8tion.jda.api.interactions.components.Button;
-import net.dv8tion.jda.api.interactions.components.Component;
+import net.dv8tion.jda.api.interactions.components.ItemComponent;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
-import net.dv8tion.jda.api.requests.restaction.MessageAction;
-import net.dv8tion.jda.api.requests.restaction.interactions.ReplyAction;
+import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
+import net.dv8tion.jda.api.requests.restaction.MessageEditAction;
+import net.dv8tion.jda.api.requests.restaction.interactions.ReplyCallbackAction;
 
 public class DiscordChatListener extends ListenerAdapter {
     private static final int MAX_BUTTONS = 5 * 5;
@@ -82,23 +84,27 @@ public class DiscordChatListener extends ListenerAdapter {
         return rows;
     }
 
-    protected void addButtons(Member member, ReplyAction action, List<Button> buttons) {
+    protected void addButtons(Member member, ReplyCallbackAction action, List<Button> buttons) {
         if (buttons != null && !buttons.isEmpty()) {
             buttons = processButtons(member, buttons);
-            action.addActionRows(getActionRows(buttons));
+            for (ActionRow row : getActionRows(buttons)) {
+                action.addActionRow(row.getComponents());
+            }
         }
     }
 
-    protected void addButtons(Member member, MessageAction action, List<Button> buttons) {
+    protected void addButtons(Member member, MessageCreateAction action, List<Button> buttons) {
         if (buttons != null && !buttons.isEmpty()) {
             buttons = processButtons(member, buttons);
-            action.setActionRows(getActionRows(buttons));
+            for (ActionRow row : getActionRows(buttons)) {
+                action.addActionRow(row.getComponents());
+            }
         }
     }
 
     protected void respond(Message originalMessage, String message, List<Button> buttons) {
         responded(originalMessage);
-        MessageAction action = originalMessage.reply(message);
+        MessageCreateAction action = originalMessage.reply(message);
         addButtons(originalMessage.getMember(), action, buttons);
         action.queue(sentMessage -> sentMessage.suppressEmbeds(true).queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in channel " + originalMessage.getChannel(), throwable));
     }
@@ -115,8 +121,8 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     protected void responded(Message authorMessage) {
-        String responseReaction = controller.getReactionEmote();
-        if (!responseReaction.isEmpty() && !authorMessage.getFlags().contains(Message.MessageFlag.EPHEMERAL)) {
+        Emoji responseReaction = controller.getReactionEmoji();
+        if (responseReaction != null && !authorMessage.getFlags().contains(Message.MessageFlag.EPHEMERAL)) {
             authorMessage.addReaction(responseReaction).queue();
         }
     }
@@ -149,7 +155,7 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     @Override
-    public void onButtonClick(ButtonClickEvent event) {
+    public void onButtonInteraction(ButtonInteractionEvent event) {
         MessageChannel channel = event.getChannel();
         if (channel.getName().equals(controller.getIgnoreChannel())) return;
         String reactionChanel = controller.getReactionChannel();
@@ -168,7 +174,7 @@ public class DiscordChatListener extends ListenerAdapter {
             if (topic != null) {
                 List<Button> buttons = new ArrayList<>();
                 String message = getTopicMessage(topic, buttons);
-                ReplyAction action = event.reply(message);
+                ReplyCallbackAction action = event.reply(message);
                 action.setEphemeral(true);
                 addButtons(event.getMember(), action, buttons);
                 action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
@@ -189,14 +195,14 @@ public class DiscordChatListener extends ListenerAdapter {
             }
 
             if (!member.getRoles().contains(role)) {
-                ReplyAction action = event.reply(controller.getMagic().getMessages().get("discord.already_verified"));
+                ReplyCallbackAction action = event.reply(controller.getMagic().getMessages().get("discord.already_verified"));
                 action.setEphemeral(true);
                 action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
                 return;
             }
 
             if (!member.getId().equals(memberId)) {
-                ReplyAction action = event.reply(controller.getMagic().getMessages().get("discord.verified_invalid"));
+                ReplyCallbackAction action = event.reply(controller.getMagic().getMessages().get("discord.verified_invalid"));
                 action.setEphemeral(true);
                 action.addActionRow(getVerifyButton(member));
                 action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
@@ -204,7 +210,7 @@ public class DiscordChatListener extends ListenerAdapter {
             }
 
             guild.removeRoleFromMember(member, role).queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to remove role from user " + member.getEffectiveName(), throwable));
-            ReplyAction action = event.reply(controller.getMagic().getMessages().get("discord.verified"));
+            ReplyCallbackAction action = event.reply(controller.getMagic().getMessages().get("discord.verified"));
             action.setEphemeral(true);
             action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + id, throwable));
 
@@ -213,15 +219,15 @@ public class DiscordChatListener extends ListenerAdapter {
             if (!clickedMessage.getFlags().contains(Message.MessageFlag.EPHEMERAL)) {
                 List<ActionRow> actionRows = clickedMessage.getActionRows();
                 if (!actionRows.isEmpty()) {
-                    List<Component> keepButtons = new ArrayList<>();
+                    List<ItemComponent> keepButtons = new ArrayList<>();
                     for (ActionRow row : actionRows) {
-                        for (Component component : row.getComponents()) {
+                        for (ItemComponent component : row.getComponents()) {
                             if (!component.equals(button)) {
                                 keepButtons.add(component);
                             }
                         }
                     }
-                    MessageAction editMessage;
+                    MessageEditAction editMessage;
                     if (keepButtons.isEmpty()) {
                         editMessage = clickedMessage.editMessageComponents();
                     } else {
@@ -259,7 +265,7 @@ public class DiscordChatListener extends ListenerAdapter {
         }
     }
 
-    private void showNextTopic(Message originalMessage, int next, ButtonClickEvent event) {
+    private void showNextTopic(Message originalMessage, int next, ButtonInteractionEvent event) {
         if (originalMessage == null) {
             controller.getLogger().warning("Could not find original message from button click");
             return;
@@ -267,7 +273,7 @@ public class DiscordChatListener extends ListenerAdapter {
         List<Button> buttons = new ArrayList<>();
         String msg = originalMessage.getContentDisplay();
         String response = getResponse(msg, buttons, originalMessage.getId(), next);
-        ReplyAction action = event.reply(response);
+        ReplyCallbackAction action = event.reply(response);
         addButtons(event.getMember(), action, buttons);
         action.setEphemeral(true);
         action.queue(sentMessage -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send message in response to button click " + event.getButton().getId(), throwable));
@@ -313,7 +319,7 @@ public class DiscordChatListener extends ListenerAdapter {
         if (channel.getName().equals(controller.getIgnoreChannel())) return;
         String reactionChanel = controller.getReactionChannel();
         if (!reactionChanel.equals("*") && !channel.getName().equals(reactionChanel)) return;
-        String reactionCode = event.getReaction().getReactionEmote().getAsReactionCode();
+        String reactionCode = event.getReaction().getEmoji().getAsReactionCode();
         if (!reactionCode.equals(controller.getReactionEmote())) return;
         event.retrieveMessage().queue(this::checkReactionAdd);
     }
@@ -335,7 +341,7 @@ public class DiscordChatListener extends ListenerAdapter {
             MessageChannel helpChannel = helpChannels.get(0);
             String welcomeMessage = controller.getMagic().getMessages().get("discord.welcome");
             welcomeMessage = welcomeMessage.replace("$member", member.getAsMention());
-            MessageAction welcomeAction = helpChannel.sendMessage(welcomeMessage);
+            MessageCreateAction welcomeAction = helpChannel.sendMessage(welcomeMessage);
             welcomeAction.setActionRow(getFirstVerifyButton(member));
             welcomeAction.queue(success -> {}, throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send welcome message to " + member.getEffectiveName(), throwable));
         }
@@ -353,7 +359,7 @@ public class DiscordChatListener extends ListenerAdapter {
         String emote = controller.getReactionEmote();
         List<MessageReaction> reactions = message.getReactions();
         for (MessageReaction reaction : reactions) {
-            if (reaction.getReactionEmote().getAsReactionCode().equals(emote) && reaction.getCount() > 1) {
+            if (reaction.getEmoji().getAsReactionCode().equals(emote) && reaction.getCount() > 1) {
                 return;
             }
         }
@@ -375,7 +381,7 @@ public class DiscordChatListener extends ListenerAdapter {
             return;
         }
 
-        List<Member> members = message.getMentionedMembers();
+        List<Member> members = message.getMentions().getMembers();
 
         boolean mentioned = false;
         String mentionChannel = controller.getMentionChannel();
@@ -403,7 +409,7 @@ public class DiscordChatListener extends ListenerAdapter {
     }
 
     @Override
-    public void onSlashCommand(SlashCommandEvent event) {
+    public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
         MessageChannel channel = event.getChannel();
         String channelName = channel.getName();
         if (channelName.equals(controller.getIgnoreChannel())) return;
@@ -416,7 +422,7 @@ public class DiscordChatListener extends ListenerAdapter {
 
         List<Button> buttons = new ArrayList<>();
         String response = getResponse(topic, buttons);
-        ReplyAction reply = event.reply(response).setEphemeral(true);
+        ReplyCallbackAction reply = event.reply(response).setEphemeral(true);
         addButtons(event.getMember(), reply, buttons);
         reply.queue();
     }
@@ -424,10 +430,9 @@ public class DiscordChatListener extends ListenerAdapter {
     public void registerCommands(Guild guild) {
         final String command = controller.getCommand();
         if (command.isEmpty()) return;
-
         CommandListUpdateAction commands = guild.updateCommands();
         commands.addCommands(
-                new CommandData(command, "Show a specific help topic")
+                Commands.slash(command, "Show a specific help topic")
                         .addOptions(new OptionData(OptionType.STRING, "topic", "The topic to show").setRequired(true))
         );
         commands.queue(success -> controller.getLogger().info("Registered /" + command + " command"), throwable -> controller.getLogger().log(Level.WARNING, "Could not register slash commands", throwable));
@@ -435,8 +440,9 @@ public class DiscordChatListener extends ListenerAdapter {
 
     protected void sendTranslateMessage(Message message) {
         String translateMessage = controller.getMagic().getMessages().get("discord.language");
-        MessageAction response = message.reply(translateMessage);
-        response.queue(sentMessage -> sentMessage.addReaction("🇺🇸").queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send language message response", throwable));
+        MessageCreateAction response = message.reply(translateMessage);
+        Emoji flag = Emoji.fromUnicode("🇺🇸");
+        response.queue(sentMessage -> sentMessage.addReaction(flag).queue(), throwable -> controller.getLogger().log(Level.SEVERE, "Failed to send language message response", throwable));
     }
 
     protected String getResponse(String msg, List<Button> buttons) {
